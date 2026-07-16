@@ -139,24 +139,54 @@ billing. About 5 minutes:
 
    ```javascript
    function doPost(e) {
-     var ss = SpreadsheetApp.getActiveSpreadsheet();
-     var sheet = ss.getSheetByName('Registrations') || ss.insertSheet('Registrations');
-     var d = JSON.parse(e.postData.contents);
+     try {
+       var ss = SpreadsheetApp.getActiveSpreadsheet();
+       var sheet = ss.getSheetByName('Registrations') || ss.insertSheet('Registrations');
 
-     if (sheet.getLastRow() === 0) {
-       sheet.appendRow(['Submitted At', 'Type', 'Name', 'Email', 'Phone', 'Role', 'Expectations']);
+       if (sheet.getLastRow() === 0) {
+         sheet.appendRow(['Submitted At', 'Type', 'Name', 'Email', 'Phone', 'Role', 'Expectations']);
+       }
+
+       // Accept a JSON body (from the site) or plain form params.
+       var d = {};
+       if (e && e.postData && e.postData.contents) {
+         d = JSON.parse(e.postData.contents);
+       } else if (e && e.parameter) {
+         d = e.parameter;
+       }
+
+       sheet.appendRow([
+         d.submittedAt || new Date().toISOString(),
+         d.source || '', d.name || '', d.email || '',
+         d.phone || '', d.role || '', d.expectations || ''
+       ]);
+
+       return ContentService
+         .createTextOutput(JSON.stringify({ ok: true }))
+         .setMimeType(ContentService.MimeType.JSON);
+     } catch (err) {
+       return ContentService
+         .createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+         .setMimeType(ContentService.MimeType.JSON);
      }
-     sheet.appendRow([
-       d.submittedAt || new Date().toISOString(),
-       d.source || '', d.name || '', d.email || '',
-       d.phone || '', d.role || '', d.expectations || ''
-     ]);
+   }
 
-     return ContentService
-       .createTextOutput(JSON.stringify({ ok: true }))
-       .setMimeType(ContentService.MimeType.JSON);
+   // ▶ To test from the editor, select this function and click Run — it feeds
+   //   doPost a fake submission so a row should appear in your sheet.
+   //   (Running doPost directly always errors, because it expects a real
+   //    web request — that's normal, not a bug.)
+   function testDoPost() {
+     doPost({ postData: { contents: JSON.stringify({
+       name: 'Test Person', email: 'test@example.com', phone: '+234000',
+       role: 'Founder', expectations: 'Just testing', source: 'Event registration'
+     }) } });
    }
    ```
+
+   > ⚠️ **Seeing `Cannot read properties of undefined (reading 'postData')`?**
+   > That happens when you press **Run** on `doPost` itself — it has no request
+   > to read. Run **`testDoPost`** instead (pick it from the function dropdown
+   > next to Run), or just test with a real form submission after step 7.
 
 4. Click **Deploy → New deployment**. Click the ⚙️ gear, choose **Web app**.
    - **Execute as:** *Me*
