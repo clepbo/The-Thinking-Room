@@ -79,6 +79,16 @@ export default function RegisterForm() {
         </div>
       </div>
 
+      <div className="field">
+        <label htmlFor="expectations">What are you hoping to get from this?</label>
+        <textarea
+          id="expectations"
+          name="expectations"
+          rows={3}
+          placeholder="What would make this conversation worth your time?"
+        />
+      </div>
+
       {status === "error" && (
         <div className="form-status error" role="alert">
           {message}

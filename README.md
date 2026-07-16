@@ -15,7 +15,7 @@ beyond React/Next — so it's fast and nothing can break from a broken link.
 1. [Run it on your computer](#1-run-it-on-your-computer)
 2. [Edit the content](#2-edit-the-content-the-only-file-you-usually-touch)
 3. [Deploy to Vercel — step by step](#3-deploy-to-vercel-step-by-step)
-4. [Make the registration form email you](#4-make-the-registration-form-email-you-optional-but-recommended)
+4. [Where does the form data go?](#4-where-does-the-form-data-go-how-to-access-registrations-anytime)
 5. [Project structure](#5-project-structure)
 
 ---
@@ -111,28 +111,87 @@ In your Vercel project: **Settings → Domains → Add**, type your domain (e.g.
 
 ---
 
-## 4. Make the registration form email you (optional but recommended)
+## 4. Where does the form data go? (how to access registrations anytime)
 
-Out of the box, form submissions are recorded in your **Vercel logs**
-(Project → Logs), so the form works immediately. To also get an **email** for
-every registration:
+Every submission (both the "Reserve Your Seat" form and the Journal signup) is
+sent to the site's handler at `app/api/register/route.ts`, which delivers it to
+**any of the channels below that you've set up**:
 
-1. Sign up free at **https://resend.com** and get an API key. (To send from your
-   own domain, verify it in Resend; to just test, you can send from their
-   `onboarding@resend.dev` address.)
-2. In Vercel: **Project → Settings → Environment Variables**, add:
+| Channel          | What you get                              | Setup      |
+| ---------------- | ----------------------------------------- | ---------- |
+| **Google Sheet** | A live spreadsheet — every signup a row   | Recommended (below) |
+| **Email**        | An email per signup                       | Optional (Resend) |
+| **Vercel logs**  | A raw log entry (safety net)              | Always on, no setup |
 
-   | Name             | Value                                             |
-   | ---------------- | ------------------------------------------------- |
-   | `RESEND_API_KEY` | your Resend API key                               |
-   | `NOTIFY_EMAIL`   | where you want registrations sent (your inbox)    |
-   | `FROM_EMAIL`     | a verified sender, e.g. `hello@thethinkingroom.co`|
+The Vercel log is only a fallback — it's hard to browse and old entries scroll
+away. **For a list you can open and search anytime, set up the Google Sheet.**
 
-3. **Redeploy** (Vercel → Deployments → ⋯ → Redeploy). Done — each signup now
-   lands in your inbox.
+### 4a. Google Sheet — the list you can open anytime (recommended)
 
-Prefer Google Sheets, Mailchimp, or Airtable instead? See the comments in
-**`app/api/register/route.ts`** — swap the delivery call for that service's API.
+This gives you a spreadsheet where every registration appears as a new row —
+name, email, phone, role, and what they're hoping to get. No API keys, no
+billing. About 5 minutes:
+
+1. Go to **https://sheets.new** to create a new Google Sheet. Name it anything
+   (e.g. "Thinking Room Registrations").
+2. In the menu: **Extensions → Apps Script**. A code editor opens in a new tab.
+3. Delete whatever's there and paste this in, then click the **Save** (💾) icon:
+
+   ```javascript
+   function doPost(e) {
+     var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var sheet = ss.getSheetByName('Registrations') || ss.insertSheet('Registrations');
+     var d = JSON.parse(e.postData.contents);
+
+     if (sheet.getLastRow() === 0) {
+       sheet.appendRow(['Submitted At', 'Type', 'Name', 'Email', 'Phone', 'Role', 'Expectations']);
+     }
+     sheet.appendRow([
+       d.submittedAt || new Date().toISOString(),
+       d.source || '', d.name || '', d.email || '',
+       d.phone || '', d.role || '', d.expectations || ''
+     ]);
+
+     return ContentService
+       .createTextOutput(JSON.stringify({ ok: true }))
+       .setMimeType(ContentService.MimeType.JSON);
+   }
+   ```
+
+4. Click **Deploy → New deployment**. Click the ⚙️ gear, choose **Web app**.
+   - **Execute as:** *Me*
+   - **Who has access:** *Anyone*
+   - Click **Deploy**, then **Authorize access** and approve the permission
+     prompts (it's your own script writing to your own sheet).
+5. Copy the **Web app URL** it gives you (it starts with
+   `https://script.google.com/macros/s/…/exec`).
+6. In Vercel: **Project → Settings → Environment Variables**, add:
+
+   | Name                | Value                                   |
+   | ------------------- | --------------------------------------- |
+   | `SHEET_WEBHOOK_URL` | the Web app URL you just copied         |
+
+7. **Redeploy** (Vercel → Deployments → ⋯ → Redeploy).
+
+Done. Submit a test registration — a row appears in your sheet instantly. Open
+that sheet from your phone or laptop anytime to see everyone who registered.
+
+> If you ever change the Apps Script, click **Deploy → Manage deployments →
+> ✏️ Edit → Version: New version** so the changes go live (the URL stays the same).
+
+### 4b. Email per signup (optional)
+
+Want an email in your inbox for each registration too? Add these environment
+variables in Vercel (uses [Resend](https://resend.com), free tier):
+
+| Name             | Value                                             |
+| ---------------- | ------------------------------------------------- |
+| `RESEND_API_KEY` | your Resend API key                               |
+| `NOTIFY_EMAIL`   | where you want registrations sent (your inbox)    |
+| `FROM_EMAIL`     | a verified sender, e.g. `hello@thethinkingroom.co`|
+
+Redeploy, and each signup also lands in your inbox. You can use the Sheet, the
+email, or both — whatever's set up gets a copy.
 
 ---
 

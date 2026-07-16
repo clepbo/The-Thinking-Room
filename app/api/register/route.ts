@@ -6,22 +6,21 @@ import { NextResponse } from "next/server";
  * ============================================================================
  *  Both the "Reserve Your Seat" form and the Journal signup POST here.
  *
- *  OUT OF THE BOX: this validates the submission and logs it to the server
- *  console (visible in Vercel → your project → Logs). That means the form
- *  works the moment you deploy — nothing to configure.
+ *  Every submission is delivered to as many of these as you've configured:
  *
- *  TO ACTUALLY RECEIVE THE SIGNUPS BY EMAIL (recommended):
- *    1. Create a free account at https://resend.com and verify a sending
- *       domain (or use their onboarding test address to start).
- *    2. In Vercel → Project → Settings → Environment Variables, add:
- *         RESEND_API_KEY   = <your Resend API key>
- *         NOTIFY_EMAIL     = the address that should receive registrations
- *         FROM_EMAIL       = a verified sender, e.g. hello@thethinkingroom.co
- *    3. Redeploy. Each signup will now be emailed to NOTIFY_EMAIL.
+ *    1. GOOGLE SHEET  (recommended — a list you can open anytime)
+ *       Set the env var  SHEET_WEBHOOK_URL  to your Google Apps Script web-app
+ *       URL. Setup steps are in the README ("Where does the form data go?").
+ *       Every signup becomes a new row in your spreadsheet.
  *
- *  Prefer a Google Sheet, Mailchimp, Airtable, etc.? Replace the
- *  `deliver()` call below with a fetch to that service's API — the shape of
- *  `payload` is already assembled for you.
+ *    2. EMAIL via Resend  (optional — get an email per signup)
+ *       Set  RESEND_API_KEY,  NOTIFY_EMAIL,  and  FROM_EMAIL.
+ *
+ *    3. VERCEL LOGS  (always on, no setup — a safety net)
+ *       Every submission is also logged (Vercel → your project → Logs).
+ *
+ *  If none of the above is configured, the form still works and the data is in
+ *  the logs — but set up the Google Sheet so you have a durable, browsable list.
  * ============================================================================
  */
 
@@ -30,6 +29,7 @@ interface Payload {
   email?: string;
   phone?: string;
   role?: string;
+  expectations?: string;
   source?: string;
 }
 
@@ -56,34 +56,49 @@ export async function POST(request: Request) {
     email,
     phone: (payload.phone || "").trim(),
     role: (payload.role || "").trim(),
+    expectations: (payload.expectations || "").trim(),
     source: payload.source === "journal" ? "Journal signup" : "Event registration",
     submittedAt: new Date().toISOString(),
   };
 
-  // Always visible in your Vercel logs, even without email configured.
+  // Always visible in your Vercel logs, even without anything else configured.
   console.log("[the-thinking-room] new signup:", record);
 
-  try {
-    await deliver(record);
-  } catch (err) {
-    // Don't fail the user's submission if the notification email hiccups —
-    // the record is already in the logs above.
-    console.error("[the-thinking-room] delivery failed:", err);
-  }
+  // Deliver everywhere that's configured. A failure in one channel must not
+  // fail the user's submission or block the others.
+  await Promise.allSettled([sendToSheet(record), sendEmail(record)]);
 
   return NextResponse.json({ ok: true });
 }
 
-async function deliver(record: Record<string, string>) {
+/** Append the submission as a row in your Google Sheet. */
+async function sendToSheet(record: Record<string, string>) {
+  const url = process.env.SHEET_WEBHOOK_URL;
+  if (!url) return; // not configured yet
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+    redirect: "follow", // Apps Script responds via a redirect
+  });
+  if (!res.ok) {
+    throw new Error(`Google Sheet webhook responded ${res.status}`);
+  }
+}
+
+/** Email the submission to you via Resend. */
+async function sendEmail(record: Record<string, string>) {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.NOTIFY_EMAIL;
   const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
-
-  // No email service configured yet — that's fine, we already logged it.
-  if (!apiKey || !to) return;
+  if (!apiKey || !to) return; // not configured yet
 
   const rows = Object.entries(record)
-    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#888">${k}</td><td>${v || "—"}</td></tr>`)
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#888">${k}</td><td>${v || "—"}</td></tr>`
+    )
     .join("");
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -99,7 +114,6 @@ async function deliver(record: Record<string, string>) {
       html: `<h2>New ${record.source}</h2><table>${rows}</table>`,
     }),
   });
-
   if (!res.ok) {
     throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
   }

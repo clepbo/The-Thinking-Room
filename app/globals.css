@@ -655,7 +655,8 @@ p {
   margin-bottom: 0.55rem;
 }
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   background: var(--panel);
   border: 1px solid var(--line-strong);
@@ -667,11 +668,18 @@ p {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   appearance: none;
 }
-.field input::placeholder {
+.field textarea {
+  resize: vertical;
+  min-height: 3.2rem;
+  line-height: 1.6;
+}
+.field input::placeholder,
+.field textarea::placeholder {
   color: var(--faint);
 }
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--ember);
   box-shadow: 0 0 0 3px rgba(224, 132, 46, 0.18);
