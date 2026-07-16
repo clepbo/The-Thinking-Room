@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Anton, Inter } from "next/font/google";
 import { site } from "./content";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+// Massive condensed display face for the poster-style headlines.
+const anton = Anton({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-serif",
+  weight: "400",
+  variable: "--font-display-next",
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-sans",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans-next",
   display: "swap",
 });
 
@@ -26,13 +27,13 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    // A tiny inline gold "TR" favicon so there's no missing-icon flash.
+    // A tiny inline amber "TR" favicon so there's no missing-icon flash.
     icon: [
       {
         url:
           "data:image/svg+xml," +
           encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0c0a07"/><text x="16" y="22" font-family="Georgia,serif" font-size="15" font-weight="700" fill="#d4af6a" text-anchor="middle">TR</text></svg>`
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0b0806"/><text x="16" y="23" font-family="Arial Black,Arial,sans-serif" font-size="16" font-weight="900" fill="#e0913f" text-anchor="middle">TR</text></svg>`
           ),
       },
     ],
@@ -45,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="en" className={`${anton.variable} ${inter.variable}`}>
       <body>{children}</body>
     </html>
   );

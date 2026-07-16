@@ -13,34 +13,49 @@ export default function Home() {
 
       {/* ================================================= HERO */}
       <section className="hero">
-        <div className="hero-grid">
-          <div className="hero-copy">
-            <div className="hero-eyebrow-row">
-              <span className="eyebrow">{site.hero.eyebrow}</span>
-              <span className="hero-edition">{site.hero.edition}</span>
-            </div>
+        <div className="hero-bg" aria-hidden="true">
+          <HeroBackdrop />
+        </div>
+        <div className="container hero-inner">
+          <Reveal className="hero-badges">
+            <span className="eyebrow-badge">
+              <span className="dot" />
+              {site.hero.eyebrow}
+            </span>
+            <span className="eyebrow-badge">{site.hero.edition}</span>
+          </Reveal>
+
+          <Reveal delay={80}>
             <h1>
-              {site.hero.titleTop}
-              <br />
+              {site.hero.titleTop}{" "}
               <span className="gold">{site.hero.titleBottom}</span>
             </h1>
-            <p className="hero-desc">{site.hero.description}</p>
-            <div className="hero-actions">
-              <a className="btn btn-primary" href="#register">
-                {site.hero.primaryCta}
-              </a>
-              <a className="btn btn-ghost" href="#about">
-                {site.hero.secondaryCta}
-                <span className="arrow" aria-hidden>
-                  →
-                </span>
-              </a>
-            </div>
-          </div>
+          </Reveal>
 
-          <div className="hero-visual" aria-hidden="true">
-            <HeroScene />
-          </div>
+          <Reveal delay={160}>
+            <p className="hero-desc">{site.hero.description}</p>
+          </Reveal>
+
+          <Reveal className="hero-actions" delay={220}>
+            <a className="btn btn-primary" href="#register">
+              {site.hero.primaryCta}
+            </a>
+            <a className="btn btn-ghost" href="#about">
+              {site.hero.secondaryCta}
+              <span className="arrow" aria-hidden>
+                →
+              </span>
+            </a>
+          </Reveal>
+
+          <Reveal className="hero-meta" delay={300}>
+            {site.details.slice(0, 3).map((d) => (
+              <div className="hero-meta-item" key={d.label}>
+                <span className="k">{d.label}</span>
+                <span className="v">{d.value}</span>
+              </div>
+            ))}
+          </Reveal>
         </div>
       </section>
 
@@ -48,6 +63,7 @@ export default function Home() {
       <section id="about" className="section">
         <div className="container about-grid">
           <Reveal className="about-body">
+            <span className="eyebrow">The Platform</span>
             <h2>{site.about.heading}</h2>
             {site.about.paragraphs.map((p, i) => (
               <p key={i}>{p}</p>
@@ -59,18 +75,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================================================= STATEMENT 1 */}
+      {site.statements[0] && <Statement data={site.statements[0]} />}
+
       {/* ================================================= EXPLORE */}
       <section id="explore" className="section explore">
         <div className="container">
-          <Reveal>
-            <h2 className="section-heading">{site.explore.heading}</h2>
-            <hr className="heading-rule" />
+          <Reveal className="explore-head">
+            <span className="eyebrow">In This Conversation</span>
+            <h2 className="section-heading" style={{ marginTop: "1rem" }}>
+              {site.explore.heading}
+            </h2>
           </Reveal>
-          <div className="explore-grid">
+          <div className="explore-list">
             {site.explore.items.map((item, i) => (
-              <Reveal key={item.label} className="explore-card" delay={i * 80}>
+              <Reveal key={item.label} className="explore-row" delay={i * 60}>
+                <span className="explore-num">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="explore-label">{item.label}</span>
                 <Icon name={item.icon} className="explore-icon" />
-                <p>{item.label}</p>
               </Reveal>
             ))}
           </div>
@@ -80,20 +104,25 @@ export default function Home() {
       {/* ================================================= AUDIENCE */}
       <section id="audience" className="section">
         <div className="container">
-          <Reveal>
-            <h2 className="section-heading">{site.audience.heading}</h2>
-            <hr className="heading-rule" />
+          <Reveal className="audience-head">
+            <span className="eyebrow">Who This Is For</span>
+            <h2 className="section-heading" style={{ marginTop: "1rem" }}>
+              Built for people who refuse to stay stuck.
+            </h2>
           </Reveal>
-          <div className="audience-grid">
-            {site.audience.items.map((item, i) => (
-              <Reveal key={item.label} className="audience-item" delay={i * 60}>
-                <Icon name={item.icon} className="audience-icon" />
+          <Reveal className="audience-grid">
+            {site.audience.items.map((item) => (
+              <span className="audience-tag" key={item.label}>
+                <Icon name={item.icon} />
                 <span>{item.label}</span>
-              </Reveal>
+              </span>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
+
+      {/* ================================================= STATEMENT 2 */}
+      {site.statements[1] && <Statement data={site.statements[1]} />}
 
       {/* ================================================= DETAILS BAR */}
       <section className="details">
@@ -183,71 +212,86 @@ export default function Home() {
   );
 }
 
-/**
- * Cinematic hero illustration — a lamp-lit armchair, drawn inline so there are
- * no external image files to host or break. Swap this out for a real photo
- * later by replacing the <HeroScene /> above with an <img> / next/image.
- */
-function HeroScene() {
+/* ---------------------------------------------------- Statement band */
+function Statement({
+  data,
+}: {
+  data: { kicker: string; line1: string; highlight: string; line2: string };
+}) {
   return (
-    <svg viewBox="0 0 600 720" preserveAspectRatio="xMidYMid slice">
+    <section className="statement">
+      <div className="container">
+        <Reveal>
+          <span className="eyebrow statement-kicker">{data.kicker}</span>
+          <h2>
+            {data.line1} <span className="gold">{data.highlight}</span>
+            <span className="dim">{data.line2}</span>
+          </h2>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Full-bleed cinematic hero backdrop — a spotlit armchair silhouette in a dark
+ * room, drawn inline so there are no external image files. Kept low-contrast so
+ * the giant headline stays the focus. Swap for a real photo later if you like.
+ */
+function HeroBackdrop() {
+  return (
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
       <defs>
-        <radialGradient id="glow" cx="52%" cy="26%" r="42%">
-          <stop offset="0%" stopColor="#f6dfa6" stopOpacity="0.55" />
-          <stop offset="45%" stopColor="#d4af6a" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#d4af6a" stopOpacity="0" />
+        <radialGradient id="spot" cx="72%" cy="12%" r="55%">
+          <stop offset="0%" stopColor="#ffcf87" stopOpacity="0.5" />
+          <stop offset="35%" stopColor="#e0842e" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#e0842e" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f6dfa6" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#f6dfa6" stopOpacity="0" />
+          <stop offset="0%" stopColor="#ffcf87" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#ffcf87" stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      {/* light cone */}
-      <polygon points="300,150 250,150 150,560 470,560 350,150" fill="url(#cone)" />
-      <ellipse cx="310" cy="170" rx="230" ry="180" fill="url(#glow)" />
+      {/* ambient glow + light cone from the top-right */}
+      <rect width="1440" height="900" fill="url(#spot)" />
+      <polygon points="1040,0 970,0 800,760 1230,760 1130,0" fill="url(#cone)" />
 
       {/* pendant lamp */}
-      <g stroke="#d4af6a" strokeWidth="2.4" fill="none" strokeLinecap="round">
-        <line x1="300" y1="0" x2="300" y2="120" />
-        <path d="M255 150 Q300 100 345 150 Z" fill="#1c1710" />
-        <path d="M255 150 h90" />
-        <ellipse cx="300" cy="150" rx="30" ry="7" fill="#f6dfa6" opacity="0.5" stroke="none" />
+      <g stroke="#e0913f" strokeWidth="2.5" fill="none" opacity="0.55" strokeLinecap="round">
+        <line x1="1050" y1="0" x2="1050" y2="150" />
+        <path d="M1010 182 Q1050 132 1090 182 Z" fill="#1a1108" />
+        <path d="M1010 182 h80" />
       </g>
 
-      {/* framed picture on the wall */}
-      <g stroke="#8a7541" strokeWidth="2" fill="none">
-        <rect x="470" y="150" width="70" height="92" rx="3" />
-        <rect x="483" y="166" width="44" height="60" rx="2" stroke="#6f5c33" />
+      {/* armchair silhouette (filled, low-contrast) */}
+      <g opacity="0.9">
+        <path
+          d="M1040 360
+             q120 0 128 92
+             l8 250
+             q0 34 -34 34
+             l-204 0
+             q-34 0 -34 -34
+             l8 -250
+             q8 -92 128 -92 z"
+          fill="#0c0805"
+          stroke="#e0913f"
+          strokeOpacity="0.35"
+          strokeWidth="2.5"
+        />
+        <path d="M978 616 q62 -34 124 0 l0 104 l-124 0 z" fill="#080502" />
       </g>
 
       {/* side table + glass */}
-      <g stroke="#d4af6a" strokeWidth="2.4" fill="none" strokeLinecap="round">
-        <ellipse cx="185" cy="452" rx="52" ry="14" />
-        <line x1="150" y1="458" x2="150" y2="560" />
-        <line x1="220" y1="458" x2="220" y2="560" />
-        <line x1="185" y1="466" x2="185" y2="560" />
-        <path d="M172 424 h26 l-3 26 h-20 z" fill="#f6dfa6" opacity="0.14" />
-      </g>
-
-      {/* armchair */}
-      <g stroke="#d4af6a" strokeWidth="2.6" fill="#1a150d" strokeLinejoin="round">
-        <path d="M300 300
-                 q90 0 96 70
-                 l6 150
-                 q0 28 -28 28
-                 l-148 0
-                 q-28 0 -28 -28
-                 l6 -150
-                 q6 -70 96 -70 z" />
-        <path d="M254 470 q46 -26 92 0 l0 78 l-92 0 z" fill="#120e08" />
-        <line x1="300" y1="470" x2="300" y2="548" stroke="#8a7541" strokeWidth="1.6" />
-        <line x1="240" y1="548" x2="240" y2="612" strokeLinecap="round" />
-        <line x1="360" y1="548" x2="360" y2="612" strokeLinecap="round" />
+      <g stroke="#e0913f" strokeWidth="2.4" strokeOpacity="0.4" fill="none" strokeLinecap="round">
+        <ellipse cx="835" cy="600" rx="58" ry="15" />
+        <line x1="797" y1="606" x2="797" y2="736" />
+        <line x1="873" y1="606" x2="873" y2="736" />
       </g>
 
       {/* floor line */}
-      <line x1="0" y1="612" x2="600" y2="612" stroke="#3a3122" strokeWidth="1.4" />
+      <line x1="0" y1="760" x2="1440" y2="760" stroke="#3a2c1a" strokeWidth="1.5" opacity="0.5" />
     </svg>
   );
 }

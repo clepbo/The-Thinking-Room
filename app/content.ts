@@ -54,6 +54,26 @@ export const site = {
   },
 
   // -------------------------------------------------------------------------
+  // STATEMENT BANDS — big full-width "one line at a time" moments.
+  // These are the cinematic beats between sections. `highlight` renders in
+  // amber. Edit freely — or delete an entry to remove that band.
+  // -------------------------------------------------------------------------
+  statements: [
+    {
+      kicker: "The Real Problem",
+      line1: "It was never about",
+      highlight: "too few options.",
+      line2: "It was about too little clarity.",
+    },
+    {
+      kicker: "Why We Gather",
+      line1: "Not to give you more",
+      highlight: "to think about.",
+      line2: "But to help you finally move.",
+    },
+  ],
+
+  // -------------------------------------------------------------------------
   // WHAT WE EXPLORE — the five cards
   // -------------------------------------------------------------------------
   explore: {
