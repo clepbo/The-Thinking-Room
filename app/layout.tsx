@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    // A tiny inline amber "TR" favicon so there's no missing-icon flash.
+    // A tiny inline "doorway + light" favicon matching the logo mark.
     icon: [
       {
         url:
           "data:image/svg+xml," +
           encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0b0806"/><text x="16" y="23" font-family="Arial Black,Arial,sans-serif" font-size="16" font-weight="900" fill="#e0913f" text-anchor="middle">TR</text></svg>`
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0b0806"/><path d="M8 26 V14.8 a8 8 0 0 1 16 0 V26" fill="none" stroke="#e0913f" stroke-width="2.2" stroke-linejoin="round"/><path d="M6 26 H26" stroke="#e0913f" stroke-width="2.2" stroke-linecap="round"/><rect x="14.9" y="10.5" width="2.4" height="14" rx="1.2" fill="#ffd38a"/></svg>`
           ),
       },
     ],

@@ -70,8 +70,8 @@ export default function RegisterForm() {
               Select one
             </option>
             {site.audience.items.map((a) => (
-              <option key={a.label} value={a.label}>
-                {a.label}
+              <option key={a.singular} value={a.singular}>
+                {a.singular}
               </option>
             ))}
             <option value="Other">Other</option>

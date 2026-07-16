@@ -268,12 +268,16 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--ember);
-  border-radius: 5px;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 8px;
   color: var(--ember-bright);
-  letter-spacing: 0.02em;
+  background:
+    radial-gradient(80% 70% at 50% 30%, rgba(224, 132, 46, 0.14), transparent 70%),
+    var(--panel);
+}
+.brand-glyph {
+  width: 30px;
+  height: 30px;
 }
 .brand-text {
   display: flex;
@@ -527,39 +531,76 @@ p {
 
 /* ----------------------------------------------------- Who This Is For */
 .audience-head {
-  margin-bottom: 3rem;
+  margin-bottom: 3.25rem;
 }
-.audience-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.9rem;
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.1rem;
 }
-.audience-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.9rem 1.4rem;
+.persona-card {
+  position: relative;
+  padding: 1.9rem 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(224, 132, 46, 0.035), transparent 60%),
+    var(--panel);
+  overflow: hidden;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.persona-card::before {
+  /* thin accent line down the left edge, revealed on hover */
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--ember), var(--gold));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.35s ease;
+}
+.persona-card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 50px -30px rgba(224, 132, 46, 0.55);
+}
+.persona-card:hover::before {
+  transform: scaleY(1);
+}
+.persona-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  transition: border-color 0.25s ease, color 0.25s ease, transform 0.25s ease,
-    background 0.25s ease;
+  background: radial-gradient(70% 70% at 50% 35%, rgba(224, 132, 46, 0.16), transparent 70%);
+  margin-bottom: 1.4rem;
+  transition: border-color 0.3s ease;
 }
-.audience-tag:hover {
+.persona-card:hover .persona-icon {
   border-color: var(--ember);
-  background: rgba(224, 132, 46, 0.08);
-  transform: translateY(-3px);
 }
-.audience-tag svg {
-  width: 22px;
-  height: 22px;
+.persona-icon svg {
+  width: 26px;
+  height: 26px;
   color: var(--ember-bright);
 }
-.audience-tag span {
+.persona-name {
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  letter-spacing: 0.03em;
+  font-size: 1.55rem;
   text-transform: uppercase;
   color: var(--cream);
+  line-height: 1;
+}
+.persona-blurb {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-top: 0.7rem;
 }
 
 /* ------------------------------------------------------- Details bar */
@@ -848,6 +889,13 @@ p {
 }
 
 /* ------------------------------------------------------- Responsive */
+/* Center a lone trailing persona card (only when there are exactly 7). */
+@media (min-width: 861px) {
+  .persona-card:nth-child(7):last-child {
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 1024px) {
   .details-row {
     grid-template-columns: repeat(3, 1fr);
@@ -889,6 +937,9 @@ p {
     max-width: 420px;
     width: 100%;
   }
+  .persona-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .explore-icon {
     display: none;
   }
@@ -909,6 +960,9 @@ p {
     border-left: 0 !important;
   }
   .form-row {
+    grid-template-columns: 1fr;
+  }
+  .persona-grid {
     grid-template-columns: 1fr;
   }
   .journal-form {

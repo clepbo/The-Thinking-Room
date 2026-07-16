@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { site } from "../app/content";
+import { LogoMark } from "./Logo";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -10,7 +11,9 @@ export default function Nav() {
     <header className={`nav ${open ? "open" : ""}`}>
       <div className="container nav-inner">
         <a className="brand" href="#top" aria-label={site.brand.name}>
-          <span className="brand-mark">{site.brand.initials}</span>
+          <span className="brand-mark">
+            <LogoMark className="brand-glyph" />
+          </span>
           <span className="brand-text">
             <span className="brand-name">{site.brand.name}</span>
             <span className="brand-tagline">{site.brand.tagline}</span>

@@ -92,14 +92,17 @@ export const site = {
   // -------------------------------------------------------------------------
   audience: {
     heading: "Who This Is For",
+    // `label` (plural) is shown on the "Who This Is For" cards.
+    // `singular` is used in the registration form's "You are a…" dropdown.
+    // `blurb` is the one-line descriptor under each persona card.
     items: [
-      { icon: "leaders", label: "Leaders" },
-      { icon: "entrepreneurs", label: "Entrepreneurs" },
-      { icon: "professionals", label: "Professionals" },
-      { icon: "founders", label: "Founders" },
-      { icon: "creators", label: "Creators" },
-      { icon: "students", label: "Students of Life" },
-      { icon: "decision", label: "Decision-Makers" },
+      { icon: "leaders", label: "Leaders", singular: "Leader", blurb: "Guiding others through uncertainty." },
+      { icon: "entrepreneurs", label: "Entrepreneurs", singular: "Entrepreneur", blurb: "Building something in a noisy world." },
+      { icon: "professionals", label: "Professionals", singular: "Professional", blurb: "Reaching for the next level." },
+      { icon: "founders", label: "Founders", singular: "Founder", blurb: "Betting on a bigger vision." },
+      { icon: "creators", label: "Creators", singular: "Creator", blurb: "Turning ideas into work that matters." },
+      { icon: "students", label: "Students of Life", singular: "Student of Life", blurb: "Always learning, never settling." },
+      { icon: "decision", label: "Decision-Makers", singular: "Decision-Maker", blurb: "Owning the hard calls." },
     ],
   },
 

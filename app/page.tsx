@@ -1,5 +1,6 @@
 import { site } from "./content";
 import { Icon } from "../components/Icons";
+import { LogoMark } from "../components/Logo";
 import Nav from "../components/Nav";
 import Reveal from "../components/Reveal";
 import RegisterForm from "../components/RegisterForm";
@@ -110,14 +111,17 @@ export default function Home() {
               Built for people who refuse to stay stuck.
             </h2>
           </Reveal>
-          <Reveal className="audience-grid">
-            {site.audience.items.map((item) => (
-              <span className="audience-tag" key={item.label}>
-                <Icon name={item.icon} />
-                <span>{item.label}</span>
-              </span>
+          <div className="persona-grid">
+            {site.audience.items.map((item, i) => (
+              <Reveal key={item.label} className="persona-card" delay={i * 50}>
+                <span className="persona-icon">
+                  <Icon name={item.icon} />
+                </span>
+                <h3 className="persona-name">{item.label}</h3>
+                <p className="persona-blurb">{item.blurb}</p>
+              </Reveal>
             ))}
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -171,7 +175,9 @@ export default function Home() {
           <div className="footer-grid">
             <div className="footer-col">
               <a className="brand" href="#top">
-                <span className="brand-mark">{site.brand.initials}</span>
+                <span className="brand-mark">
+                  <LogoMark className="brand-glyph" />
+                </span>
                 <span className="brand-text">
                   <span className="brand-name">{site.brand.name}</span>
                   <span className="brand-tagline">{site.brand.tagline}</span>
