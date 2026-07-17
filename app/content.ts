@@ -110,10 +110,10 @@ export const site = {
   // EVENT DETAILS BAR  ← change the date / time / platform here
   // -------------------------------------------------------------------------
   details: [
-    { icon: "calendar", label: "Date", value: "Saturday, June 22, 2024" },
-    { icon: "clock", label: "Time", value: "4:00 PM – 6:00 PM (WAT)" },
+    { icon: "calendar", label: "Date", value: "Thursday, July 23, 2026" },
+    { icon: "clock", label: "Time", value: "7:30 PM (WAT)" },
     { icon: "monitor", label: "Platform", value: "Zoom" },
-    { icon: "timer", label: "Duration", value: "2 Hours" },
+   // { icon: "timer", label: "Duration", value: "2 Hours" },
     { icon: "ticket", label: "Investment", value: "Free (Registration Required)" },
   ],
 
@@ -158,7 +158,7 @@ export const site = {
       { label: "Instagram", href: "#", icon: "instagram" },
       { label: "YouTube", href: "#", icon: "youtube" },
     ],
-    copyright: "© 2024 The Thinking Room. All rights reserved.",
+    copyright: "© 2026 The Thinking Room. All rights reserved.",
   },
 } as const;
 
