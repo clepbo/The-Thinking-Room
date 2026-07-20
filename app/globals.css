@@ -217,7 +217,7 @@ p {
 }
 .btn-primary {
   background: linear-gradient(180deg, var(--ember-bright), var(--ember));
-  color: #f4efe6;
+  color: #ffffff;
   box-shadow: 0 12px 34px -12px rgba(221, 37, 37, 0.7);
 }
 .btn-primary:hover {
@@ -353,7 +353,7 @@ p {
   margin-bottom: 2rem;
 }
 .hero h1 {
-  font-size: clamp(3rem, 8.2vw, 8rem);
+  font-size: clamp(2.4rem, 6.6vw, 6.4rem);
   color: var(--cream);
   max-width: 15ch;
   text-shadow: 0 6px 40px rgba(0, 0, 0, 0.5);

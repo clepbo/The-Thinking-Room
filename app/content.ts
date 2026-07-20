@@ -118,6 +118,17 @@ export const site = {
   ],
 
   // -------------------------------------------------------------------------
+  // EVENT SCHEDULE (machine-readable) — powers the calendar invite in the
+  // confirmation email. Keep `startISO` in sync with the Date/Time above
+  // whenever you change them. Format: "YYYY-MM-DDTHH:MM:SS+01:00" (WAT is
+  // UTC+1 — adjust the offset if you ever move the event to another zone).
+  // -------------------------------------------------------------------------
+  event: {
+    startISO: "2026-07-23T19:30:00+01:00",
+    durationMinutes: 120,
+  },
+
+  // -------------------------------------------------------------------------
   // REGISTRATION FORM
   // -------------------------------------------------------------------------
   register: {
