@@ -4,9 +4,10 @@ A cinematic, single-page website for **The Thinking Room** — a modern
 intellectual platform — built to announce the current conversation and let
 visitors reserve a seat.
 
-Built with **Next.js** (App Router) + TypeScript. Dark, editorial, gold-on-black
-aesthetic. No external image files, no CSS framework, no runtime dependencies
-beyond React/Next — so it's fast and nothing can break from a broken link.
+Built with **Next.js** (App Router) + TypeScript. Dark, editorial, red-and-lime-
+on-black aesthetic. No CSS framework, no runtime dependencies beyond
+React/Next — so it's fast. The logo and hero photo live in `public/` as plain
+image files (see [Project structure](#5-project-structure)).
 
 ---
 
@@ -223,6 +224,45 @@ variables in Vercel (uses [Resend](https://resend.com), free tier):
 Redeploy, and each signup also lands in your inbox. You can use the Sheet, the
 email, or both — whatever's set up gets a copy.
 
+### 4c. Auto-reply to the person who registered (confirmation email)
+
+As soon as someone submits the "Reserve Your Seat" form, they can get an
+automatic reply confirming their seat with the event's **date, time, and Zoom
+link** — no manual work on your end. (Journal signups don't get this; it's
+just for event registrations.)
+
+1. You need `RESEND_API_KEY` and `FROM_EMAIL` set (see 4b above — `NOTIFY_EMAIL`
+   is not required for this one).
+2. Add one more environment variable with your real Zoom (or Google Meet /
+   Teams) link:
+
+   | Name        | Value                                              |
+   | ----------- | --------------------------------------------------- |
+   | `ZOOM_LINK` | your meeting URL, e.g. `https://zoom.us/j/123456789` |
+
+   > Why an environment variable and not `app/content.ts`? `content.ts` is
+   > bundled into the page everyone's browser downloads, so anything you put
+   > there is visible to anyone who views the page source — even people who
+   > never registered. An environment variable stays on the server and is
+   > only ever used inside the email that's sent to someone *after* they
+   > register.
+
+3. Redeploy. From then on, every registrant gets an email like:
+
+   > **You're In, [Name].**
+   > Your seat for The Thinking Room is confirmed.
+   > **Date:** *(pulled live from `app/content.ts`)*
+   > **Time:** *(pulled live from `app/content.ts`)*
+   > **Zoom Link:** *(your `ZOOM_LINK`)*
+
+   The date and time always match what's on the site — edit them in
+   `app/content.ts` under `details` and the confirmation email picks it up
+   automatically, no code changes needed.
+
+If `ZOOM_LINK` isn't set yet, the email still sends (confirming the date and
+time) with a line saying the link will follow in a reminder — so you can turn
+this on before you have the final Zoom link and fill it in later.
+
 ---
 
 ## 5. Project structure
@@ -234,13 +274,16 @@ app/
   globals.css       ← the design system (colors, type, layout)
   page.tsx          ← assembles the sections into the page
   api/register/
-    route.ts        ← handles form submissions
+    route.ts        ← handles form submissions + the confirmation email
 components/
   Nav.tsx           ← top navigation (with mobile menu)
   Icons.tsx         ← all inline SVG icons
   Reveal.tsx        ← fade-in-on-scroll animation
   RegisterForm.tsx  ← the "Reserve Your Seat" form
   JournalForm.tsx   ← the newsletter signup
+public/
+  logo.png            ← the wordmark used in the nav + footer
+  hero-portrait.webp  ← the photo in the hero section
 ```
 
 ---

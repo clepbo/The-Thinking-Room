@@ -1,6 +1,5 @@
 import { site } from "./content";
 import { Icon } from "../components/Icons";
-import { LogoMark } from "../components/Logo";
 import Nav from "../components/Nav";
 import Reveal from "../components/Reveal";
 import RegisterForm from "../components/RegisterForm";
@@ -17,45 +16,58 @@ export default function Home() {
         <div className="hero-bg" aria-hidden="true">
           <HeroBackdrop />
         </div>
-        <div className="container hero-inner">
-          <Reveal className="hero-badges">
-            <span className="eyebrow-badge">
-              <span className="dot" />
-              {site.hero.eyebrow}
-            </span>
-            <span className="eyebrow-badge">{site.hero.edition}</span>
-          </Reveal>
-
-          <Reveal delay={80}>
-            <h1>
-              {site.hero.titleTop}{" "}
-              <span className="gold">{site.hero.titleBottom}</span>
-            </h1>
-          </Reveal>
-
-          <Reveal delay={160}>
-            <p className="hero-desc">{site.hero.description}</p>
-          </Reveal>
-
-          <Reveal className="hero-actions" delay={220}>
-            <a className="btn btn-primary" href="#register">
-              {site.hero.primaryCta}
-            </a>
-            <a className="btn btn-ghost" href="#about">
-              {site.hero.secondaryCta}
-              <span className="arrow" aria-hidden>
-                →
+        <div className="container hero-inner hero-grid">
+          <div className="hero-copy">
+            <Reveal className="hero-badges">
+              <span className="eyebrow-badge">
+                <span className="dot" />
+                {site.hero.eyebrow}
               </span>
-            </a>
-          </Reveal>
+              <span className="eyebrow-badge">{site.hero.edition}</span>
+            </Reveal>
 
-          <Reveal className="hero-meta" delay={300}>
-            {site.details.slice(0, 3).map((d) => (
-              <div className="hero-meta-item" key={d.label}>
-                <span className="k">{d.label}</span>
-                <span className="v">{d.value}</span>
-              </div>
-            ))}
+            <Reveal delay={80}>
+              <h1>
+                {site.hero.titleTop}{" "}
+                <span className="gold">{site.hero.titleBottom}</span>
+              </h1>
+            </Reveal>
+
+            <Reveal delay={160}>
+              <p className="hero-desc">{site.hero.description}</p>
+            </Reveal>
+
+            <Reveal className="hero-actions" delay={220}>
+              <a className="btn btn-primary" href="#register">
+                {site.hero.primaryCta}
+              </a>
+              <a className="btn btn-ghost" href="#about">
+                {site.hero.secondaryCta}
+                <span className="arrow" aria-hidden>
+                  →
+                </span>
+              </a>
+            </Reveal>
+
+            <Reveal className="hero-meta" delay={300}>
+              {site.details.slice(0, 3).map((d) => (
+                <div className="hero-meta-item" key={d.label}>
+                  <span className="k">{d.label}</span>
+                  <span className="v">{d.value}</span>
+                </div>
+              ))}
+            </Reveal>
+          </div>
+
+          <Reveal className="hero-visual" delay={140}>
+            <div className="hero-visual-glow" aria-hidden="true" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-portrait.webp"
+              alt="Portrait of the host of The Thinking Room"
+              className="hero-photo"
+              fetchPriority="high"
+            />
           </Reveal>
         </div>
       </section>
@@ -175,14 +187,10 @@ export default function Home() {
           <div className="footer-grid">
             <div className="footer-col">
               <a className="brand" href="#top">
-                <span className="brand-mark">
-                  <LogoMark className="brand-glyph" />
-                </span>
-                <span className="brand-text">
-                  <span className="brand-name">{site.brand.name}</span>
-                  <span className="brand-tagline">{site.brand.tagline}</span>
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt={site.brand.name} className="brand-logo" />
               </a>
+              <span className="brand-tagline footer-tagline">{site.brand.tagline}</span>
             </div>
 
             <div className="footer-col">
@@ -240,64 +248,35 @@ function Statement({
 }
 
 /**
- * Full-bleed cinematic hero backdrop — a spotlit armchair silhouette in a dark
- * room, drawn inline so there are no external image files. Kept low-contrast so
- * the giant headline stays the focus. Swap for a real photo later if you like.
+ * Ambient glow + light-cone backdrop that sits behind the hero photo, drawn
+ * inline so it scales losslessly. Gives the portrait a spotlit, cinematic
+ * entrance without needing a separate lighting photo.
  */
 function HeroBackdrop() {
   return (
     <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
       <defs>
-        <radialGradient id="spot" cx="72%" cy="12%" r="55%">
-          <stop offset="0%" stopColor="#ffcf87" stopOpacity="0.5" />
-          <stop offset="35%" stopColor="#e0842e" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#e0842e" stopOpacity="0" />
+        <radialGradient id="spot" cx="72%" cy="10%" r="60%">
+          <stop offset="0%" stopColor="#ff6b6b" stopOpacity="0.45" />
+          <stop offset="35%" stopColor="#dd2525" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#dd2525" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffcf87" stopOpacity="0.22" />
+          <stop offset="0%" stopColor="#ffcf87" stopOpacity="0.16" />
           <stop offset="100%" stopColor="#ffcf87" stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      {/* ambient glow + light cone from the top-right */}
+      {/* ambient glow + light cone from the top-right, over the portrait */}
       <rect width="1440" height="900" fill="url(#spot)" />
       <polygon points="1040,0 970,0 800,760 1230,760 1130,0" fill="url(#cone)" />
 
       {/* pendant lamp */}
-      <g stroke="#e0913f" strokeWidth="2.5" fill="none" opacity="0.55" strokeLinecap="round">
+      <g stroke="#e0913f" strokeWidth="2.5" fill="none" opacity="0.45" strokeLinecap="round">
         <line x1="1050" y1="0" x2="1050" y2="150" />
         <path d="M1010 182 Q1050 132 1090 182 Z" fill="#1a1108" />
         <path d="M1010 182 h80" />
       </g>
-
-      {/* armchair silhouette (filled, low-contrast) */}
-      <g opacity="0.9">
-        <path
-          d="M1040 360
-             q120 0 128 92
-             l8 250
-             q0 34 -34 34
-             l-204 0
-             q-34 0 -34 -34
-             l8 -250
-             q8 -92 128 -92 z"
-          fill="#0c0805"
-          stroke="#e0913f"
-          strokeOpacity="0.35"
-          strokeWidth="2.5"
-        />
-        <path d="M978 616 q62 -34 124 0 l0 104 l-124 0 z" fill="#080502" />
-      </g>
-
-      {/* side table + glass */}
-      <g stroke="#e0913f" strokeWidth="2.4" strokeOpacity="0.4" fill="none" strokeLinecap="round">
-        <ellipse cx="835" cy="600" rx="58" ry="15" />
-        <line x1="797" y1="606" x2="797" y2="736" />
-        <line x1="873" y1="606" x2="873" y2="736" />
-      </g>
-
-      {/* floor line */}
-      <line x1="0" y1="760" x2="1440" y2="760" stroke="#3a2c1a" strokeWidth="1.5" opacity="0.5" />
     </svg>
   );
 }
