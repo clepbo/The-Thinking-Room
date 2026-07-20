@@ -5,18 +5,18 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces — deep, warm near-black */
-  --bg: #0a0806;
-  --bg-2: #100b08;
-  --bg-3: #17100b;
-  --panel: #0e0a07;
+  /* Surfaces — deep, neutral near-black */
+  --bg: #0a0a0a;
+  --bg-2: #121212;
+  --bg-3: #181818;
+  --panel: #111111;
 
-  /* Accents — warm gold shifting to ember orange */
-  --gold: #d9a441;
-  --gold-bright: #f2c266;
-  --ember: #e0842e;
-  --ember-bright: #f5a24a;
-  --gold-dim: #7a5f2c;
+  /* Accents — brand palette: signal red + electric lime, maroon as the deep shade */
+  --gold: #d1ff00;
+  --gold-bright: #e3ff66;
+  --ember: #dd2525;
+  --ember-bright: #ff4d4d;
+  --gold-dim: #982424;
 
   /* Text */
   --cream: #f4efe6;
@@ -24,8 +24,8 @@
   --faint: #6d6353;
 
   /* Lines */
-  --line: rgba(224, 160, 90, 0.14);
-  --line-strong: rgba(224, 160, 90, 0.32);
+  --line: rgba(221, 37, 37, 0.14);
+  --line-strong: rgba(221, 37, 37, 0.32);
 
   /* Type — these are provided by next/font (see app/layout.tsx). The
      fallbacks here only apply if next/font somehow fails to load. */
@@ -62,8 +62,8 @@ body {
   overflow-x: hidden;
   /* warm ember wash from the top, deep shadow at the base */
   background-image:
-    radial-gradient(90% 55% at 70% -8%, rgba(224, 132, 46, 0.16), transparent 60%),
-    radial-gradient(70% 50% at 12% 8%, rgba(217, 164, 65, 0.08), transparent 55%),
+    radial-gradient(90% 55% at 70% -8%, rgba(221, 37, 37, 0.16), transparent 60%),
+    radial-gradient(70% 50% at 12% 8%, rgba(209, 255, 0, 0.06), transparent 55%),
     radial-gradient(120% 90% at 50% 118%, rgba(0, 0, 0, 0.72), transparent 68%);
   background-attachment: fixed;
 }
@@ -152,7 +152,7 @@ p {
   height: 7px;
   border-radius: 50%;
   background: var(--ember);
-  box-shadow: 0 0 10px 2px rgba(224, 132, 46, 0.7);
+  box-shadow: 0 0 10px 2px rgba(221, 37, 37, 0.7);
 }
 
 .section-heading {
@@ -217,12 +217,12 @@ p {
 }
 .btn-primary {
   background: linear-gradient(180deg, var(--ember-bright), var(--ember));
-  color: #201203;
-  box-shadow: 0 12px 34px -12px rgba(224, 132, 46, 0.7);
+  color: #f4efe6;
+  box-shadow: 0 12px 34px -12px rgba(221, 37, 37, 0.7);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 46px -12px rgba(245, 162, 74, 0.85);
+  box-shadow: 0 18px 46px -12px rgba(255, 77, 77, 0.85);
 }
 .btn-ghost {
   background: transparent;
@@ -262,34 +262,10 @@ p {
   align-items: center;
   gap: 0.85rem;
 }
-.brand-mark {
-  width: 46px;
-  height: 46px;
+.brand-logo {
+  height: 44px;
+  width: auto;
   flex: none;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 8px;
-  color: var(--ember-bright);
-  background:
-    radial-gradient(80% 70% at 50% 30%, rgba(224, 132, 46, 0.14), transparent 70%),
-    var(--panel);
-}
-.brand-glyph {
-  width: 30px;
-  height: 30px;
-}
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-.brand-name {
-  font-family: var(--font-display);
-  font-size: 1.12rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--cream);
 }
 .brand-tagline {
   font-size: 0.62rem;
@@ -297,6 +273,10 @@ p {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
+}
+.footer-tagline {
+  display: block;
+  margin-top: 1rem;
 }
 .nav-links {
   display: flex;
@@ -352,13 +332,19 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(75% 75% at 50% 45%, transparent 40%, rgba(6, 4, 3, 0.85) 100%);
+  background: radial-gradient(75% 75% at 38% 45%, transparent 40%, rgba(2, 2, 2, 0.88) 100%);
 }
 .hero-inner {
   position: relative;
   z-index: 1;
   width: 100%;
   padding-block: clamp(6rem, 12vh, 9rem) clamp(3rem, 8vh, 5rem);
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3.5rem;
+  align-items: center;
 }
 .hero-badges {
   display: flex;
@@ -367,10 +353,46 @@ p {
   margin-bottom: 2rem;
 }
 .hero h1 {
-  font-size: clamp(3.3rem, 12vw, 9.5rem);
+  font-size: clamp(3rem, 8.2vw, 8rem);
   color: var(--cream);
   max-width: 15ch;
   text-shadow: 0 6px 40px rgba(0, 0, 0, 0.5);
+}
+.hero-visual {
+  position: relative;
+  justify-self: center;
+  width: 100%;
+  max-width: 420px;
+}
+.hero-visual-glow {
+  position: absolute;
+  inset: -12% -18%;
+  background:
+    radial-gradient(55% 55% at 50% 22%, rgba(221, 37, 37, 0.4), transparent 70%),
+    radial-gradient(40% 40% at 78% 85%, rgba(209, 255, 0, 0.16), transparent 70%);
+  filter: blur(30px);
+  z-index: 0;
+}
+.hero-photo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7);
+}
+@media (min-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: clamp(2rem, 5vw, 4.5rem);
+  }
+  .hero-visual {
+    max-width: none;
+  }
 }
 .hero-desc {
   color: var(--muted);
@@ -424,7 +446,7 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(60% 120% at 80% 50%, rgba(224, 132, 46, 0.14), transparent 60%);
+  background: radial-gradient(60% 120% at 80% 50%, rgba(221, 37, 37, 0.14), transparent 60%);
 }
 .statement .container {
   position: relative;
@@ -471,7 +493,7 @@ p {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
-    radial-gradient(60% 60% at 50% 40%, rgba(224, 132, 46, 0.12), transparent 70%),
+    radial-gradient(60% 60% at 50% 40%, rgba(221, 37, 37, 0.12), transparent 70%),
     var(--panel);
 }
 .about-visual svg {
@@ -503,7 +525,7 @@ p {
 }
 .explore-row:hover {
   padding-left: 1.25rem;
-  background: linear-gradient(90deg, rgba(224, 132, 46, 0.06), transparent 70%);
+  background: linear-gradient(90deg, rgba(221, 37, 37, 0.06), transparent 70%);
 }
 .explore-num {
   font-family: var(--font-display);
@@ -543,7 +565,7 @@ p {
   padding: 1.9rem 1.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(224, 132, 46, 0.035), transparent 60%),
+  background: linear-gradient(180deg, rgba(221, 37, 37, 0.035), transparent 60%),
     var(--panel);
   overflow: hidden;
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
@@ -564,7 +586,7 @@ p {
 .persona-card:hover {
   border-color: var(--line-strong);
   transform: translateY(-4px);
-  box-shadow: 0 24px 50px -30px rgba(224, 132, 46, 0.55);
+  box-shadow: 0 24px 50px -30px rgba(221, 37, 37, 0.55);
 }
 .persona-card:hover::before {
   transform: scaleY(1);
@@ -576,7 +598,7 @@ p {
   height: 52px;
   border-radius: 50%;
   border: 1px solid var(--line-strong);
-  background: radial-gradient(70% 70% at 50% 35%, rgba(224, 132, 46, 0.16), transparent 70%);
+  background: radial-gradient(70% 70% at 50% 35%, rgba(221, 37, 37, 0.16), transparent 70%);
   margin-bottom: 1.4rem;
   transition: border-color 0.3s ease;
 }
@@ -654,7 +676,7 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(55% 80% at 50% 0%, rgba(224, 132, 46, 0.14), transparent 60%);
+  background: radial-gradient(55% 80% at 50% 0%, rgba(221, 37, 37, 0.14), transparent 60%);
 }
 .register-inner {
   position: relative;
@@ -723,7 +745,7 @@ p {
 .field textarea:focus {
   outline: none;
   border-color: var(--ember);
-  box-shadow: 0 0 0 3px rgba(224, 132, 46, 0.18);
+  box-shadow: 0 0 0 3px rgba(221, 37, 37, 0.18);
 }
 .field select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ac9f8c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -809,7 +831,7 @@ p {
 .journal-form input:focus {
   outline: none;
   border-color: var(--ember);
-  box-shadow: 0 0 0 3px rgba(224, 132, 46, 0.18);
+  box-shadow: 0 0 0 3px rgba(221, 37, 37, 0.18);
 }
 .journal-status {
   font-size: 0.85rem;
@@ -828,6 +850,9 @@ p {
   gap: clamp(2rem, 5vw, 4rem);
   padding-bottom: 2.5rem;
   border-bottom: 1px solid var(--line);
+}
+.footer-col:first-child .brand-logo {
+  height: 58px;
 }
 .footer-col h4 {
   font-family: var(--font-sans);
