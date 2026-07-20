@@ -111,7 +111,7 @@ export const site = {
   // -------------------------------------------------------------------------
   details: [
     { icon: "calendar", label: "Date", value: "Thursday, July 23, 2026" },
-    { icon: "clock", label: "Time", value: "7:30 PM (WAT)" },
+    { icon: "clock", label: "Time", value: "7:00 PM (WAT)" },
     { icon: "monitor", label: "Platform", value: "Zoom" },
    // { icon: "timer", label: "Duration", value: "2 Hours" },
     { icon: "ticket", label: "Investment", value: "Free (Registration Required)" },
@@ -124,7 +124,7 @@ export const site = {
   // UTC+1 — adjust the offset if you ever move the event to another zone).
   // -------------------------------------------------------------------------
   event: {
-    startISO: "2026-07-23T19:30:00+01:00",
+    startISO: "2026-07-23T19:00:00+01:00",
     durationMinutes: 120,
   },
 
