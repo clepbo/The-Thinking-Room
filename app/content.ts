@@ -18,13 +18,16 @@ export const site = {
     initials: "TR",
   },
 
-  // Top navigation links. `href` values starting with "#" scroll to a section.
+  // Top navigation links. Hrefs starting with "/#" scroll to a homepage
+  // section (the leading "/" matters — this Nav also renders on /founder and
+  // /tadcircle, so a bare "#about" would try to scroll within whatever page
+  // it's on instead of jumping back to the homepage section).
   nav: [
-    { label: "About", href: "#about" },
-    { label: "Conversations", href: "#explore" },
-    { label: "Journal", href: "#journal" },
-    { label: "TADCircle", href: "#audience" },
-    { label: "Founder", href: "#about" },
+    { label: "About", href: "/#about" },
+    { label: "Conversations", href: "/#explore" },
+    { label: "Journal", href: "/#journal" },
+    { label: "TADCircle", href: "/tadcircle" },
+    { label: "Founder", href: "/founder" },
   ],
 
   // -------------------------------------------------------------------------
@@ -151,14 +154,112 @@ export const site = {
   },
 
   // -------------------------------------------------------------------------
+  // FOUNDER PAGE  (/founder)
+  // -------------------------------------------------------------------------
+  founder: {
+    eyebrow: "The Founder",
+    name: "Austin Adetunji",
+    title: "Thinker. Coach. Founder of The Thinking Room.",
+    photo: "/founder-portrait.webp",
+    paragraphs: [
+      "Austin Adetunji is a thinker, coach, and founder of The Thinking Room. Austin helps people see what they couldn't previously see. His thoughts reveal the hidden patterns that shape leadership, human behaviour, decision-making, work, and purposeful living.",
+      "With years of experience in data analytics, Austin developed a disciplined way of observing patterns and systems. Over time, that analytical foundation expanded into a lifelong study of psychology, philosophy, behavioural science, leadership, organizational thinking, and theology. Today, he is recognized for synthesizing ideas across disciplines into practical mental models that help people understand themselves and the world more deeply.",
+    ],
+    // The disciplines named in the second paragraph above, pulled out as a
+    // standalone list for the "Where His Thinking Draws From" grid.
+    disciplines: {
+      heading: "Where His Thinking Draws From",
+      intro:
+        "A disciplined way of observing patterns and systems, expanded into a lifelong study across disciplines:",
+      origin: "Data Analytics",
+      items: [
+        "Psychology",
+        "Philosophy",
+        "Behavioural Science",
+        "Leadership",
+        "Organizational Thinking",
+        "Theology",
+      ],
+    },
+    quote: {
+      kicker: "The Work",
+      line1: "Austin helps people see",
+      highlight: "what they couldn't previously see.",
+      line2: " His thoughts reveal the patterns that shape how we lead, decide, and live.",
+    },
+    cta: {
+      heading: "Join The Conversation",
+      description:
+        "Austin hosts The Thinking Room's live conversations and leads TADCircle, his private learning community for professionals, entrepreneurs, and emerging leaders.",
+      primaryLabel: "Reserve Your Seat",
+      primaryHref: "/#register",
+      secondaryLabel: "Explore TADCircle",
+      secondaryHref: "/tadcircle",
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // TADCIRCLE PAGE  (/tadcircle)
+  // -------------------------------------------------------------------------
+  tadcircle: {
+    eyebrow: "The Circle",
+    title: "TADCircle",
+    subtitle: "The Austin Adetunji Circle",
+    intro:
+      "TADCircle (The Austin Adetunji Circle) is a private learning community where professionals, entrepreneurs, and emerging leaders engage with Austin's ongoing study, observations, and frameworks for personal and professional growth.",
+    // The three ways Austin shows up, named directly in the intro copy.
+    engagement: {
+      heading: "How Austin Engages",
+      items: [
+        {
+          icon: "mic",
+          label: "Speaking",
+          blurb: "To organizations navigating change and complexity.",
+        },
+        {
+          icon: "handshake",
+          label: "Coaching",
+          blurb: "Individuals, building the judgment to make hard calls.",
+        },
+        {
+          icon: "pen",
+          label: "Writing",
+          blurb: "For a global audience, in essays and mental models.",
+        },
+      ],
+    },
+    quote: {
+      kicker: "The Conviction",
+      line1: "Better thinking leads to",
+      highlight: "better decisions.",
+      line2: " Better decisions lead to a better life.",
+    },
+    audienceHeading: "Who TADCircle Is For",
+    mission: {
+      kicker: "The Mission",
+      text: "His mission is not merely to provide answers, but to help people develop the judgment, perspective, and clarity required to flourish in every area of life.",
+    },
+    cta: {
+      heading: "Join The Conversation",
+      description:
+        "TADCircle grows out of the same conversations The Thinking Room hosts publicly. Reserve your seat at the current one.",
+      primaryLabel: "Reserve Your Seat",
+      primaryHref: "/#register",
+      secondaryLabel: "Meet The Founder",
+      secondaryHref: "/founder",
+    },
+  },
+
+  // -------------------------------------------------------------------------
   // FOOTER
   // -------------------------------------------------------------------------
   footer: {
     quickLinks: [
-      { label: "About", href: "#about" },
-      { label: "Conversations", href: "#explore" },
-      { label: "Journal", href: "#journal" },
-      { label: "TADCircle", href: "#audience" },
+      { label: "About", href: "/#about" },
+      { label: "Conversations", href: "/#explore" },
+      { label: "Journal", href: "/#journal" },
+      { label: "Founder", href: "/founder" },
+      { label: "TADCircle", href: "/tadcircle" },
     ],
     email: "hello@thethinkingroom.co",
     handle: "@thethinkingroom.co",

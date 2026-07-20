@@ -913,6 +913,142 @@ p {
   color: var(--faint);
 }
 
+/* ------------------------------------------------ Founder / TADCircle pages */
+.page-hero {
+  position: relative;
+  padding-block: clamp(6rem, 13vh, 9rem) clamp(3rem, 7vh, 4.5rem);
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.page-hero-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 70% at 50% 0%, rgba(221, 37, 37, 0.18), transparent 60%);
+  pointer-events: none;
+}
+.page-hero-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.page-hero h1 {
+  margin-top: 1.75rem;
+  font-size: clamp(2.6rem, 8vw, 6rem);
+  color: var(--cream);
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.5);
+}
+.page-hero-subtitle {
+  margin-top: 1.25rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  max-width: 36rem;
+}
+
+.founder-bio p {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+.founder-bio p:last-child {
+  margin-bottom: 0;
+}
+
+.disciplines-intro {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 46rem;
+  margin-top: 1rem;
+}
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+.chip {
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--panel);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+.chip-origin {
+  border-color: var(--ember);
+  color: var(--ember-bright);
+  font-weight: 700;
+}
+
+.tadcircle-intro p {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.75;
+  max-width: 52rem;
+}
+
+.mission-quote {
+  position: relative;
+  padding-block: clamp(4rem, 9vw, 6.5rem);
+  border-block: 1px solid var(--line);
+  background: var(--panel);
+  text-align: center;
+}
+.mission-quote .statement-kicker {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+.mission-quote blockquote {
+  position: relative;
+  margin: 0 auto;
+  max-width: 44rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 4.2vw, 2.7rem);
+  line-height: 1.3;
+  color: var(--cream);
+}
+.mission-quote .mark {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 5rem);
+  line-height: 0.6;
+  color: var(--ember);
+  opacity: 0.6;
+  margin-bottom: 0.5rem;
+}
+
+.page-cta {
+  text-align: center;
+}
+.page-cta h2 {
+  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+  color: var(--cream);
+  max-width: 20ch;
+  margin-inline: auto;
+}
+.page-cta .lead {
+  margin: 1.25rem auto 0;
+  max-width: 40rem;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+.page-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
 /* ------------------------------------------------------- Responsive */
 /* Center a lone trailing persona card (only when there are exactly 7). */
 @media (min-width: 861px) {
