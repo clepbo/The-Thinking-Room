@@ -226,38 +226,38 @@ email, or both — whatever's set up gets a copy.
 
 ### 4c. Auto-reply to the person who registered (confirmation email)
 
-As soon as someone submits the "Reserve Your Seat" form, they can get an
-automatic reply confirming their seat with the event's **date, time, and Zoom
-link** — no manual work on your end. (Journal signups don't get this; it's
-just for event registrations.)
+As soon as someone submits the "Reserve Your Seat" form, they get an
+automatic reply confirming their seat with the event's **date, time, Zoom
+link, Meeting ID, Passcode, and a calendar invite** — no manual work on your
+end. (Journal signups don't get this; it's just for event registrations.)
 
 1. You need `RESEND_API_KEY` and `FROM_EMAIL` set (see 4b above — `NOTIFY_EMAIL`
    is not required for this one).
-2. Add one more environment variable with your real Zoom (or Google Meet /
-   Teams) link:
+2. Add these environment variables with your real Zoom (or Google Meet /
+   Teams) details:
 
-   | Name        | Value                                              |
-   | ----------- | --------------------------------------------------- |
-   | `ZOOM_LINK` | your meeting URL, e.g. `https://zoom.us/j/123456789` |
+   | Name              | Value                                                | Required? |
+   | ----------------- | ----------------------------------------------------- | --------- |
+   | `ZOOM_LINK`       | your meeting URL, e.g. `https://zoom.us/j/123456789`   | Yes |
+   | `ZOOM_MEETING_ID` | e.g. `818 8668 7384`                                   | No — auto-parsed from `ZOOM_LINK` if you skip it |
+   | `ZOOM_PASSCODE`   | the numeric passcode Zoom shows in your invite         | No — Zoom doesn't put this in the URL, so there's nothing to parse; leave it out and that line is just skipped |
 
-   > Why an environment variable and not `app/content.ts`? `content.ts` is
+   > Why environment variables and not `app/content.ts`? `content.ts` is
    > bundled into the page everyone's browser downloads, so anything you put
    > there is visible to anyone who views the page source — even people who
-   > never registered. An environment variable stays on the server and is
-   > only ever used inside the email that's sent to someone *after* they
-   > register.
+   > never registered. Environment variables stay on the server and are only
+   > ever used inside the email that's sent to someone *after* they register.
 
-3. Redeploy. From then on, every registrant gets an email like:
-
-   > **You're In, [Name].**
-   > Your seat for The Thinking Room is confirmed.
-   > **Date:** *(pulled live from `app/content.ts`)*
-   > **Time:** *(pulled live from `app/content.ts`)*
-   > **Zoom Link:** *(your `ZOOM_LINK`)*
-
-   The date and time always match what's on the site — edit them in
-   `app/content.ts` under `details` and the confirmation email picks it up
-   automatically, no code changes needed.
+3. Redeploy. From then on, every registrant gets an email with:
+   - The date and time — computed from `site.event.startISO` in
+     `app/content.ts`, so it's always correct. If you ever change the event's
+     date/time, update **both** `details` (what's shown on the page) and
+     `event.startISO` (what the email/calendar invite uses) — there's a
+     comment right above it in `content.ts` as a reminder.
+   - The Zoom link, Meeting ID, and Passcode (whichever you've set).
+   - An **"Add to Google Calendar"** button, plus a `.ics` file attached to
+     the email so it also works with Outlook, Apple Calendar, and anything
+     else that reads calendar files.
 
 If `ZOOM_LINK` isn't set yet, the email still sends (confirming the date and
 time) with a line saying the link will follow in a reminder — so you can turn
