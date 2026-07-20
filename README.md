@@ -121,7 +121,7 @@ sent to the site's handler at `app/api/register/route.ts`, which delivers it to
 | Channel          | What you get                              | Setup      |
 | ---------------- | ----------------------------------------- | ---------- |
 | **Google Sheet** | A live spreadsheet — every signup a row   | Recommended (below) |
-| **Email**        | An email per signup                       | Optional (Resend) |
+| **Email**        | An email per signup                       | Optional (your own Gmail account) |
 | **Vercel logs**  | A raw log entry (safety net)              | Always on, no setup |
 
 The Vercel log is only a fallback — it's hard to browse and old entries scroll
@@ -210,19 +210,47 @@ that sheet from your phone or laptop anytime to see everyone who registered.
 > If you ever change the Apps Script, click **Deploy → Manage deployments →
 > ✏️ Edit → Version: New version** so the changes go live (the URL stays the same).
 
-### 4b. Email per signup (optional)
+### 4b. Email per signup, via your own Gmail account (optional)
 
-Want an email in your inbox for each registration too? Add these environment
-variables in Vercel (uses [Resend](https://resend.com), free tier):
+Both the owner-notification email (this section) and the registrant
+confirmation email (4c below) send through **your own Gmail account** using
+Nodemailer + Gmail SMTP — not a transactional email API like Resend or
+SendGrid.
 
-| Name             | Value                                             |
-| ---------------- | ------------------------------------------------- |
-| `RESEND_API_KEY` | your Resend API key                               |
-| `NOTIFY_EMAIL`   | where you want registrations sent (your inbox)    |
-| `FROM_EMAIL`     | a verified sender, e.g. `hello@thethinkingroom.co`|
+> **Why Gmail and not Resend/SendGrid?** Those services require you to prove
+> you own the domain you're sending from (via DNS records) before they'll
+> deliver to arbitrary recipients. If your site is still on the default
+> `*.vercel.app` domain, you don't control its DNS, so it can never be
+> verified — every send would fail with something like *"the gmail.com
+> domain is not verified"* or a 403. Sending through your own Gmail account
+> sidesteps that entirely, since you're authenticating as yourself, not
+> claiming to be a domain. The tradeoff is Gmail's own sending limit (about
+> 500 emails/day on a regular account) — far more than a seat-limited event
+> needs. **If you later buy a custom domain**, switching to Resend/SendGrid
+> with a verified domain is a better long-term choice (better deliverability,
+> higher limits) — ask your dev to swap it in.
 
-Redeploy, and each signup also lands in your inbox. You can use the Sheet, the
-email, or both — whatever's set up gets a copy.
+**Setup (~5 minutes):**
+
+1. On the Gmail account you want to send from, turn on **2-Step Verification**
+   if it isn't already: **[myaccount.google.com/security](https://myaccount.google.com/security) → 2-Step Verification**.
+2. Generate an **App Password**: **[myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)**
+   → name it something like "The Thinking Room" → copy the 16-character
+   password it gives you. (This is different from your normal Gmail
+   password — it's a one-time-shown password just for this app.)
+3. In Vercel: **Project → Settings → Environment Variables**, add:
+
+   | Name                 | Value                                          |
+   | -------------------- | ----------------------------------------------- |
+   | `GMAIL_USER`         | the Gmail address you're sending from            |
+   | `GMAIL_APP_PASSWORD` | the 16-character App Password from step 2        |
+   | `NOTIFY_EMAIL`       | where you want registration notifications sent (can be the same address, or different) |
+
+4. **Redeploy** (Vercel → Deployments → ⋯ → Redeploy — env vars only take
+   effect on deployments created *after* you add them).
+
+Once that's done, you get an email for every signup, and you can use the
+Sheet, the email, or both.
 
 ### 4c. Auto-reply to the person who registered (confirmation email)
 
@@ -231,8 +259,8 @@ automatic reply confirming their seat with the event's **date, time, Zoom
 link, Meeting ID, Passcode, and a calendar invite** — no manual work on your
 end. (Journal signups don't get this; it's just for event registrations.)
 
-1. You need `RESEND_API_KEY` and `FROM_EMAIL` set (see 4b above — `NOTIFY_EMAIL`
-   is not required for this one).
+1. You need `GMAIL_USER` and `GMAIL_APP_PASSWORD` set (see 4b above —
+   `NOTIFY_EMAIL` is not required for this one).
 2. Add these environment variables with your real Zoom (or Google Meet /
    Teams) details:
 
@@ -262,6 +290,21 @@ end. (Journal signups don't get this; it's just for event registrations.)
 If `ZOOM_LINK` isn't set yet, the email still sends (confirming the date and
 time) with a line saying the link will follow in a reminder — so you can turn
 this on before you have the final Zoom link and fill it in later.
+
+### 4d. Testing that email actually works
+
+1. Set all four env vars from 4b/4c above in Vercel, then **redeploy** —
+   this step gets missed most often, and env vars never apply retroactively
+   to a deployment built before you added them.
+2. Submit a real test registration on the live site.
+3. Check **Vercel → your project → Logs** (or the "Runtime Logs" tab) for
+   lines starting with `[the-thinking-room]`. Every delivery channel logs
+   exactly what happened:
+   - `... skipped — missing GMAIL_USER/GMAIL_APP_PASSWORD` → the env vars
+     aren't set (or weren't set at deploy time — redeploy).
+   - `... failed: Error: ...` → the actual error from Gmail, printed in full.
+   - `... sent` / `sent to <email>` → it worked. Check spam if it's not in
+     the inbox.
 
 ---
 

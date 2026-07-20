@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { site } from "../../content";
 
 /**
@@ -14,14 +15,20 @@ import { site } from "../../content";
  *       URL. Setup steps are in the README ("Where does the form data go?").
  *       Every signup becomes a new row in your spreadsheet.
  *
- *    2. EMAIL via Resend  (optional — get an email per signup)
- *       Set  RESEND_API_KEY,  NOTIFY_EMAIL,  and  FROM_EMAIL.
+ *    2. EMAIL via Gmail SMTP  (optional — get an email per signup)
+ *       Set  GMAIL_USER,  GMAIL_APP_PASSWORD,  and  NOTIFY_EMAIL.
+ *       (We use Gmail SMTP rather than a transactional email API because
+ *       this site runs on the default *.vercel.app domain — providers like
+ *       Resend/SendGrid require a verified custom domain to send to
+ *       arbitrary recipients. Sending as your own Gmail account sidesteps
+ *       that, at the cost of Gmail's ~500-emails/day sending limit — plenty
+ *       for a seat-limited event.)
  *
  *    3. VERCEL LOGS  (always on, no setup — a safety net)
  *       Every submission is also logged (Vercel → your project → Logs).
  *
  *  Event registrants (not Journal subscribers) also get an automatic reply —
- *  see `sendConfirmationEmail` below. It reuses RESEND_API_KEY / FROM_EMAIL,
+ *  see `sendConfirmationEmail` below. It reuses GMAIL_USER / GMAIL_APP_PASSWORD,
  *  reads the date/time straight from app/content.ts (`site.event.startISO`)
  *  so it's always in sync with what's on the page, and attaches a calendar
  *  invite (.ics) plus an "Add to Google Calendar" link. The Zoom details
@@ -130,14 +137,24 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
-/** Email the submission to you via Resend. */
+/** Shared Gmail SMTP transporter. Returns null if the credentials aren't set. */
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+}
+
+/** Email the submission to you via your own Gmail account. */
 async function sendEmail(record: Record<string, string>) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const transporter = getTransporter();
   const to = process.env.NOTIFY_EMAIL;
-  const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
-  if (!apiKey || !to) {
+  if (!transporter || !to) {
     console.log(
-      `[the-thinking-room] Owner notification email skipped — missing ${!apiKey ? "RESEND_API_KEY" : "NOTIFY_EMAIL"}`
+      `[the-thinking-room] Owner notification email skipped — missing ${!transporter ? "GMAIL_USER/GMAIL_APP_PASSWORD" : "NOTIFY_EMAIL"}`
     );
     return;
   }
@@ -149,22 +166,12 @@ async function sendEmail(record: Record<string, string>) {
     )
     .join("");
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: `New ${record.source} — The Thinking Room`,
-      html: `<h2>New ${record.source}</h2><table>${rows}</table>`,
-    }),
+  await transporter.sendMail({
+    from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: `New ${record.source} — The Thinking Room`,
+    html: `<h2>New ${record.source}</h2><table>${rows}</table>`,
   });
-  if (!res.ok) {
-    throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
-  }
   console.log("[the-thinking-room] Owner notification email: sent");
 }
 
@@ -286,14 +293,15 @@ function googleCalendarLink({
  * add the session to their calendar (a Google Calendar link plus an
  * attached .ics file for everyone else). Fires only for the "Reserve Your
  * Seat" form (not the Journal signup — that's a newsletter, not an RSVP).
- * Uses the same Resend credentials as the owner notification above, so no
- * extra setup beyond what's already in the README.
+ * Uses the same Gmail SMTP credentials as the owner notification above, so
+ * no extra setup beyond what's already in the README.
  */
 async function sendConfirmationEmail(record: Record<string, string>) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
-  if (!apiKey || !record.email) {
-    console.log("[the-thinking-room] Registrant confirmation email skipped — RESEND_API_KEY not set");
+  const transporter = getTransporter();
+  if (!transporter || !record.email) {
+    console.log(
+      "[the-thinking-room] Registrant confirmation email skipped — GMAIL_USER/GMAIL_APP_PASSWORD not set"
+    );
     return;
   }
 
@@ -416,27 +424,17 @@ async function sendConfirmationEmail(record: Record<string, string>) {
       </div>
     </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: record.email,
-      subject: `You're confirmed — ${site.brand.name}, ${eventDate}`,
-      html,
-      attachments: [
-        {
-          filename: "the-thinking-room.ics",
-          content: Buffer.from(ics, "utf-8").toString("base64"),
-        },
-      ],
-    }),
+  await transporter.sendMail({
+    from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
+    to: record.email,
+    subject: `You're confirmed — ${site.brand.name}, ${eventDate}`,
+    html,
+    attachments: [
+      {
+        filename: "the-thinking-room.ics",
+        content: ics,
+      },
+    ],
   });
-  if (!res.ok) {
-    throw new Error(`Resend confirmation email responded ${res.status}: ${await res.text()}`);
-  }
   console.log(`[the-thinking-room] Registrant confirmation email: sent to ${record.email}`);
 }
