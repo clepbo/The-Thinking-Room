@@ -124,7 +124,7 @@ export const site = {
   // UTC+1 — adjust the offset if you ever move the event to another zone).
   // -------------------------------------------------------------------------
   event: {
-    startISO: "2026-07-23T19:30:00+01:00",
+    startISO: "2026-07-23T19:00:00+01:00",
     durationMinutes: 120,
   },
 
