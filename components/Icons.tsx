@@ -135,6 +135,27 @@ const icons: Record<string, JSX.Element> = {
     </>
   ),
 
+  // --- TADCircle: how Austin engages ---
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" {...s} />
+      <path d="M5 11a7 7 0 0 0 14 0" {...s} />
+      <path d="M12 18v3M9 21h6" {...s} />
+    </>
+  ),
+  handshake: (
+    <>
+      <path d="M2 12l4-4 4 3 4-3 4 4" {...s} />
+      <path d="M6 11l4 5 2-1.5M18 11l-4 5-2-1.5" {...s} />
+    </>
+  ),
+  pen: (
+    <>
+      <path d="M4 20l1-4L15 6l4 4L9 20H4z" {...s} />
+      <path d="M13 8l4 4" {...s} />
+    </>
+  ),
+
   // --- Journal ---
   envelope: (
     <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { site } from "../app/content";
 
 export default function Nav() {
@@ -9,20 +10,20 @@ export default function Nav() {
   return (
     <header className={`nav ${open ? "open" : ""}`}>
       <div className="container nav-inner">
-        <a className="brand" href="#top" aria-label={site.brand.name}>
+        <Link className="brand" href="/#top" aria-label={site.brand.name}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt={site.brand.name} className="brand-logo" />
-        </a>
+        </Link>
 
         <nav className="nav-links" onClick={() => setOpen(false)}>
           {site.nav.map((item) => (
-            <a key={item.label} href={item.href}>
+            <Link key={item.label} href={item.href}>
               {item.label}
-            </a>
+            </Link>
           ))}
-          <a className="btn btn-primary nav-cta" href="#register">
+          <Link className="btn btn-primary nav-cta" href="/#register">
             Register
-          </a>
+          </Link>
         </nav>
 
         <button

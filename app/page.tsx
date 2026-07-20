@@ -1,9 +1,11 @@
 import { site } from "./content";
 import { Icon } from "../components/Icons";
 import Nav from "../components/Nav";
+import Footer from "../components/Footer";
 import Reveal from "../components/Reveal";
 import RegisterForm from "../components/RegisterForm";
 import JournalForm from "../components/JournalForm";
+import Statement from "../components/Statement";
 
 export default function Home() {
   return (
@@ -181,69 +183,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================================================= FOOTER */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-grid">
-            <div className="footer-col">
-              <a className="brand" href="#top">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.png" alt={site.brand.name} className="brand-logo" />
-              </a>
-              <span className="brand-tagline footer-tagline">{site.brand.tagline}</span>
-            </div>
-
-            <div className="footer-col">
-              <h4>Quick Links</h4>
-              <div className="footer-links">
-                {site.footer.quickLinks.map((l) => (
-                  <a key={l.label} href={l.href}>
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div className="footer-col">
-              <h4>Connect</h4>
-              <div className="footer-contact">
-                <a href={`mailto:${site.footer.email}`}>{site.footer.email}</a>
-                <a href="#">{site.footer.handle}</a>
-              </div>
-              <div className="socials">
-                {site.footer.socials.map((soc) => (
-                  <a key={soc.label} href={soc.href} className="social" aria-label={soc.label}>
-                    <Icon name={soc.icon} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="footer-bottom">{site.footer.copyright}</div>
-        </div>
-      </footer>
+      <Footer />
     </>
-  );
-}
-
-/* ---------------------------------------------------- Statement band */
-function Statement({
-  data,
-}: {
-  data: { kicker: string; line1: string; highlight: string; line2: string };
-}) {
-  return (
-    <section className="statement">
-      <div className="container">
-        <Reveal>
-          <span className="eyebrow statement-kicker">{data.kicker}</span>
-          <h2>
-            {data.line1} <span className="gold">{data.highlight}</span>
-            <span className="dim">{data.line2}</span>
-          </h2>
-        </Reveal>
-      </div>
-    </section>
   );
 }
 
