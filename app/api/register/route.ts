@@ -82,12 +82,23 @@ export async function POST(request: Request) {
   console.log("[the-thinking-room] new signup:", record);
 
   // Deliver everywhere that's configured. A failure in one channel must not
-  // fail the user's submission or block the others.
-  const tasks = [sendToSheet(record), sendEmail(record)];
+  // fail the user's submission or block the others — but it must still be
+  // logged, or a broken channel fails silently forever. Check Vercel →
+  // your project → Logs after a test submission to see these.
+  const tasks: [string, Promise<void>][] = [
+    ["Google Sheet", sendToSheet(record)],
+    ["Owner notification email", sendEmail(record)],
+  ];
   if (record.source === "Event registration") {
-    tasks.push(sendConfirmationEmail(record));
+    tasks.push(["Registrant confirmation email", sendConfirmationEmail(record)]);
   }
-  await Promise.allSettled(tasks);
+  const results = await Promise.allSettled(tasks.map(([, task]) => task));
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const [label] = tasks[i];
+      console.error(`[the-thinking-room] ${label} failed:`, result.reason);
+    }
+  });
 
   return NextResponse.json({ ok: true });
 }
@@ -95,7 +106,10 @@ export async function POST(request: Request) {
 /** Append the submission as a row in your Google Sheet. */
 async function sendToSheet(record: Record<string, string>) {
   const url = process.env.SHEET_WEBHOOK_URL;
-  if (!url) return; // not configured yet
+  if (!url) {
+    console.log("[the-thinking-room] Google Sheet skipped — SHEET_WEBHOOK_URL not set");
+    return;
+  }
 
   const res = await fetch(url, {
     method: "POST",
@@ -121,7 +135,12 @@ async function sendEmail(record: Record<string, string>) {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.NOTIFY_EMAIL;
   const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
-  if (!apiKey || !to) return; // not configured yet
+  if (!apiKey || !to) {
+    console.log(
+      `[the-thinking-room] Owner notification email skipped — missing ${!apiKey ? "RESEND_API_KEY" : "NOTIFY_EMAIL"}`
+    );
+    return;
+  }
 
   const rows = Object.entries(record)
     .map(
@@ -146,6 +165,7 @@ async function sendEmail(record: Record<string, string>) {
   if (!res.ok) {
     throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
   }
+  console.log("[the-thinking-room] Owner notification email: sent");
 }
 
 const EVENT_TIMEZONE = "Africa/Lagos"; // WAT, UTC+1 year-round — no DST to worry about
@@ -272,7 +292,10 @@ function googleCalendarLink({
 async function sendConfirmationEmail(record: Record<string, string>) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL || "onboarding@resend.dev";
-  if (!apiKey || !record.email) return; // not configured yet
+  if (!apiKey || !record.email) {
+    console.log("[the-thinking-room] Registrant confirmation email skipped — RESEND_API_KEY not set");
+    return;
+  }
 
   const start = new Date(site.event.startISO);
   const end = new Date(start.getTime() + site.event.durationMinutes * 60_000);
@@ -415,4 +438,5 @@ async function sendConfirmationEmail(record: Record<string, string>) {
   if (!res.ok) {
     throw new Error(`Resend confirmation email responded ${res.status}: ${await res.text()}`);
   }
+  console.log(`[the-thinking-room] Registrant confirmation email: sent to ${record.email}`);
 }
