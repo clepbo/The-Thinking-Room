@@ -111,7 +111,7 @@ export const site = {
   // -------------------------------------------------------------------------
   details: [
     { icon: "calendar", label: "Date", value: "Thursday, July 23, 2026" },
-    { icon: "clock", label: "Time", value: "7:30 PM (WAT)" },
+    { icon: "clock", label: "Time", value: "7:00 PM (WAT)" },
     { icon: "monitor", label: "Platform", value: "Zoom" },
    // { icon: "timer", label: "Duration", value: "2 Hours" },
     { icon: "ticket", label: "Investment", value: "Free (Registration Required)" },
