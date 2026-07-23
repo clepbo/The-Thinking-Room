@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import styles from "../admin.module.css";
+import { useAdminToken } from "../auth";
 import { slugify, type EventRecord } from "../../lib/events";
 
 type Draft = Omit<EventRecord, "created_at" | "updated_at">;
@@ -25,22 +26,20 @@ const toLocal = (iso: string | null) => (iso ? new Date(iso).toISOString().slice
 const fromLocal = (local: string) => (local ? new Date(local).toISOString() : null);
 
 export default function EventsAdmin() {
-  const [token, setToken] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [unlocking, setUnlocking] = useState(false);
+  const token = useAdminToken();
 
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const api = useCallback(
-    async (method: "GET" | "POST", payload?: unknown, authToken?: string) => {
+    async (method: "GET" | "POST", payload?: unknown) => {
       const res = await fetch("/api/admin/events", {
         method,
-        headers: { "Content-Type": "application/json", "x-admin-token": authToken ?? token },
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
         ...(payload ? { body: JSON.stringify(payload) } : {}),
       });
       const data = await res.json().catch(() => ({}));
@@ -49,30 +48,20 @@ export default function EventsAdmin() {
     [token]
   );
 
-  useEffect(() => {
-    const saved = sessionStorage.getItem("ttr-admin-token");
-    if (saved) setToken(saved);
-  }, []);
-
-  async function unlock(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) return;
-    setUnlocking(true);
-    setAuthError("");
-    const { status, data } = await api("GET", undefined, token);
-    setUnlocking(false);
-    if (status === 200) {
-      sessionStorage.setItem("ttr-admin-token", token);
-      setEvents(data.events || []);
-      setUnlocked(true);
-    } else if (status === 401) setAuthError("That token doesn't match ADMIN_TOKEN.");
-    else setAuthError(data.error || `Error (${status}).`);
-  }
-
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const { status, data } = await api("GET");
-    if (status === 200) setEvents(data.events || []);
-  }
+    if (status === 200) {
+      setEvents(data.events || []);
+      setLoadError("");
+    } else {
+      setLoadError(data.error || `Couldn't load events (${status}).`);
+    }
+  }, [api]);
+
+  // Load events on mount.
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   function newEvent() {
     setDraft({ ...BLANK });
@@ -124,28 +113,9 @@ export default function EventsAdmin() {
     } else setMsg({ ok: false, text: data.error || "Delete failed." });
   }
 
-  // -------------------------------------------------------------- lock screen
-  if (!unlocked) {
-    return (
-      <div className={styles.page}>
-        <form className={styles.lockCard} onSubmit={unlock}>
-          <h2>Events CMS</h2>
-          <p>Enter your admin token to manage events.</p>
-          <div className={styles.field}>
-            <input className={styles.input} type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Admin token" autoFocus />
-          </div>
-          <button className={`${styles.btn} ${styles.btnPrimary}`} type="submit" disabled={unlocking || !token}>
-            {unlocking ? "Checking…" : "Unlock"}
-          </button>
-          {authError && <div className={`${styles.status} ${styles.statusErr}`}>{authError}</div>}
-        </form>
-      </div>
-    );
-  }
-
   // ------------------------------------------------------------------- console
   return (
-    <div className={styles.page}>
+    <>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>
@@ -154,10 +124,11 @@ export default function EventsAdmin() {
           <p className={styles.subtitle}>Create events and publish them to the website (/events).</p>
         </div>
         <div className={styles.headerNav}>
-          <a className={styles.lockBtn} href="/admin">← Reminders</a>
           <a className={styles.lockBtn} href="/events" target="_blank">View site ↗</a>
         </div>
       </div>
+
+      {loadError && <div className={`${styles.status} ${styles.statusErr}`} style={{ marginBottom: 16 }}>{loadError}</div>}
 
       <div className={styles.grid}>
         {/* ---------------------------------------------------------- list */}
@@ -258,6 +229,6 @@ export default function EventsAdmin() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

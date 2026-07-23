@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import styles from "../admin.module.css";
+import { useAdminToken } from "../auth";
 import {
   type Block,
   type CampaignMeta,
@@ -29,10 +30,7 @@ const BLOCK_LABEL: Record<Block["type"], string> = {
 };
 
 export default function NewsletterComposer() {
-  const [token, setToken] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [unlocking, setUnlocking] = useState(false);
+  const token = useAdminToken();
 
   const init = defaultCampaign();
   const [meta, setMeta] = useState<CampaignMeta>(init.meta);
@@ -50,10 +48,10 @@ export default function NewsletterComposer() {
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const api = useCallback(
-    async (payload: Record<string, unknown>, authToken?: string) => {
+    async (payload: Record<string, unknown>) => {
       const res = await fetch("/api/send-reminders", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-token": authToken ?? token },
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
@@ -61,25 +59,6 @@ export default function NewsletterComposer() {
     },
     [token]
   );
-
-  useEffect(() => {
-    const saved = sessionStorage.getItem("ttr-admin-token");
-    if (saved) setToken(saved);
-  }, []);
-
-  async function unlock(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) return;
-    setUnlocking(true);
-    setAuthError("");
-    const { status } = await api({ preview: true }, token);
-    setUnlocking(false);
-    if (status === 200) {
-      sessionStorage.setItem("ttr-admin-token", token);
-      setUnlocked(true);
-    } else if (status === 401) setAuthError("That token doesn't match ADMIN_TOKEN.");
-    else setAuthError(`Unexpected error (${status}).`);
-  }
 
   // ----- live preview (rendered client-side, {{firstName}} filled for realism)
   const previewHtml = useMemo(() => {
@@ -168,39 +147,15 @@ export default function NewsletterComposer() {
     setSendResult({ ok: failed === 0, msg: `Delivered ${sent} of ${list.length}${failed ? ` · ${failed} failed` : ". All done."}` });
   }
 
-  // ---------------------------------------------------------------- lock screen
-  if (!unlocked) {
-    return (
-      <div className={styles.page}>
-        <form className={styles.lockCard} onSubmit={unlock}>
-          <h2>Newsletter Composer</h2>
-          <p>Enter your admin token to compose and send.</p>
-          <div className={styles.field}>
-            <input className={styles.input} type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Admin token" autoFocus />
-          </div>
-          <button className={`${styles.btn} ${styles.btnPrimary}`} type="submit" disabled={unlocking || !token}>
-            {unlocking ? "Checking…" : "Unlock"}
-          </button>
-          {authError && <div className={`${styles.status} ${styles.statusErr}`}>{authError}</div>}
-        </form>
-      </div>
-    );
-  }
-
   // ------------------------------------------------------------------- composer
   return (
-    <div className={styles.page}>
+    <>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>
             Newsletter <span>Composer</span>
           </h1>
           <p className={styles.subtitle}>Build a newsletter or digest, preview it, and send to your list.</p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <a className={styles.lockBtn} href="/admin">
-            ← Reminders
-          </a>
         </div>
       </div>
 
@@ -326,7 +281,7 @@ export default function NewsletterComposer() {
           <iframe className={styles.previewFrame} title="Newsletter preview" srcDoc={previewHtml} />
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

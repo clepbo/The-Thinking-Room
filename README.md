@@ -435,10 +435,22 @@ and the CMS reports that it isn't connected — the rest of the site is unaffect
 > Keep it in Vercel env vars, never in the repo. If it's ever exposed, rotate it
 > in the Supabase dashboard.
 
+## The admin (`/admin`)
+
+All admin tools live behind one login now. Enter your `ADMIN_TOKEN` **once** at
+`/admin`, then use the **left sidebar** to move between tabs — no re-auth:
+
+- **Reminders** — the reminder console (edit, preview, batched send).
+- **Newsletter** — the block-based newsletter/digest composer.
+- **Events CMS** — create/publish events to `/events`.
+- **Dashboard** — audience numbers (from the Google Sheet), event counts (from
+  Supabase), and where email/site tracking is headed. Site visits/page views are
+  in **Vercel → Analytics**.
+
 ### Still to come (next Supabase steps)
 
-- **Real-time dashboard**: campaign history, delivered counts, and open/click
-  tracking (tracking pixel + redirect links logged to Supabase).
+- **Email open/click tracking** per campaign (tracking pixel + redirect links
+  logged to Supabase), surfaced on the Dashboard.
 - **Saved audiences & an unsubscribe list** stored in the database.
 
 ---

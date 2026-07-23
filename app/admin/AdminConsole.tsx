@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./admin.module.css";
+import { useAdminToken } from "./auth";
 
 interface Content {
   subject: string;
@@ -37,10 +38,7 @@ const EMPTY_CONTENT: Content = {
 };
 
 export default function AdminConsole() {
-  const [token, setToken] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [unlocking, setUnlocking] = useState(false);
+  const token = useAdminToken();
 
   const [content, setContent] = useState<Content>(EMPTY_CONTENT);
   const [sampleName, setSampleName] = useState("Ada");
@@ -62,12 +60,12 @@ export default function AdminConsole() {
 
   /** POST to the reminder endpoint with the admin token attached. */
   const api = useCallback(
-    async (payload: Record<string, unknown>, authToken?: string) => {
+    async (payload: Record<string, unknown>) => {
       const res = await fetch("/api/send-reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": authToken ?? token,
+          "x-admin-token": token,
         },
         body: JSON.stringify(payload),
       });
@@ -77,43 +75,21 @@ export default function AdminConsole() {
     [token]
   );
 
-  // Restore a token saved earlier this session.
+  // Load the default reminder content once on mount.
   useEffect(() => {
-    const saved = sessionStorage.getItem("ttr-admin-token");
-    if (saved) setToken(saved);
-  }, []);
-
-  async function unlock(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) return;
-    setUnlocking(true);
-    setAuthError("");
-    const { status, data } = await api({ preview: true }, token);
-    setUnlocking(false);
-    if (status === 200) {
-      sessionStorage.setItem("ttr-admin-token", token);
-      setContent(data.content as Content);
-      setPreviewHtml(data.html as string);
-      setPreviewSubject(data.subject as string);
-      setUnlocked(true);
-    } else if (status === 401) {
-      setAuthError("That token doesn't match ADMIN_TOKEN. Check the value in Vercel.");
-    } else {
-      setAuthError(data.error || `Unexpected error (${status}).`);
-    }
-  }
-
-  function lock() {
-    sessionStorage.removeItem("ttr-admin-token");
-    setUnlocked(false);
-    setToken("");
-    setRecipients(null);
-  }
+    (async () => {
+      const { status, data } = await api({ preview: true });
+      if (status === 200) {
+        setContent(data.content as Content);
+        setPreviewHtml(data.html as string);
+        setPreviewSubject(data.subject as string);
+      }
+    })();
+  }, [api]);
 
   // Live preview — re-render (debounced) whenever the content or sample changes.
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!unlocked) return;
     if (previewTimer.current) clearTimeout(previewTimer.current);
     previewTimer.current = setTimeout(async () => {
       const { status, data } = await api({ preview: true, content, sampleName });
@@ -125,7 +101,7 @@ export default function AdminConsole() {
     return () => {
       if (previewTimer.current) clearTimeout(previewTimer.current);
     };
-  }, [content, sampleName, unlocked, api]);
+  }, [content, sampleName, api]);
 
   async function loadRecipients() {
     setLoadingRecipients(true);
@@ -198,38 +174,9 @@ export default function AdminConsole() {
 
   const set = (patch: Partial<Content>) => setContent((c) => ({ ...c, ...patch }));
 
-  // ---------------------------------------------------------------- Lock screen
-  if (!unlocked) {
-    return (
-      <div className={styles.page}>
-        <form className={styles.lockCard} onSubmit={unlock}>
-          <h2>Reminder Console</h2>
-          <p>
-            Enter the admin token (the <code>ADMIN_TOKEN</code> you set in Vercel) to
-            manage and send reminder emails.
-          </p>
-          <div className={styles.field}>
-            <input
-              className={styles.input}
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Admin token"
-              autoFocus
-            />
-          </div>
-          <button className={`${styles.btn} ${styles.btnPrimary}`} type="submit" disabled={unlocking || !token}>
-            {unlocking ? "Checking…" : "Unlock"}
-          </button>
-          {authError && <div className={`${styles.status} ${styles.statusErr}`}>{authError}</div>}
-        </form>
-      </div>
-    );
-  }
-
   // ------------------------------------------------------------------- Console
   return (
-    <div className={styles.page}>
+    <>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>
@@ -238,17 +185,6 @@ export default function AdminConsole() {
           <p className={styles.subtitle}>
             Edit the reminder, preview it live, send yourself a test, then send to every registrant.
           </p>
-        </div>
-        <div className={styles.headerNav}>
-          <a className={styles.lockBtn} href="/admin/newsletter">
-            Newsletter
-          </a>
-          <a className={styles.lockBtn} href="/admin/events">
-            Events CMS
-          </a>
-          <button className={styles.lockBtn} onClick={lock}>
-            Lock
-          </button>
         </div>
       </div>
 
@@ -486,6 +422,6 @@ export default function AdminConsole() {
           <iframe className={styles.previewFrame} title="Email preview" srcDoc={previewHtml} />
         </div>
       </div>
-    </div>
+    </>
   );
 }
