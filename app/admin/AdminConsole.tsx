@@ -9,6 +9,9 @@ interface Content {
   intro: string;
   body: string;
   includeZoom: boolean;
+  zoomLink: string;
+  zoomMeetingId: string;
+  zoomPasscode: string;
 }
 
 interface Recipient {
@@ -28,6 +31,9 @@ const EMPTY_CONTENT: Content = {
   intro: "",
   body: "",
   includeZoom: true,
+  zoomLink: "",
+  zoomMeetingId: "",
+  zoomPasscode: "",
 };
 
 export default function AdminConsole() {
@@ -293,6 +299,40 @@ export default function AdminConsole() {
             />
             Include the Zoom join link, Meeting ID &amp; passcode
           </label>
+
+          {content.includeZoom && (
+            <div style={{ marginTop: 14 }}>
+              <div className={styles.field}>
+                <label className={styles.label}>Zoom join link</label>
+                <input
+                  className={styles.input}
+                  value={content.zoomLink}
+                  onChange={(e) => set({ zoomLink: e.target.value })}
+                  placeholder="https://zoom.us/j/… (blank = use saved link)"
+                />
+              </div>
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Meeting ID</label>
+                  <input
+                    className={styles.input}
+                    value={content.zoomMeetingId}
+                    onChange={(e) => set({ zoomMeetingId: e.target.value })}
+                    placeholder="Auto from link if blank"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Passcode</label>
+                  <input
+                    className={styles.input}
+                    value={content.zoomPasscode}
+                    onChange={(e) => set({ zoomPasscode: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className={styles.divider} />
 

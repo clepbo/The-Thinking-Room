@@ -124,6 +124,10 @@ export interface ReminderContent {
   intro: string;
   body: string;
   includeZoom: boolean;
+  // Zoom overrides. Leave blank to fall back to the ZOOM_* env vars.
+  zoomLink: string;
+  zoomMeetingId: string;
+  zoomPasscode: string;
 }
 
 /** Starting values shown in the admin editor. `{{placeholders}}` are filled per-recipient. */
@@ -136,6 +140,9 @@ export function defaultReminderContent(): ReminderContent {
     body:
       "This isn't another webinar — it's a conversation that challenges assumptions, examines ideas, and creates clarity. Come ready to think.",
     includeZoom: true,
+    zoomLink: "",
+    zoomMeetingId: "",
+    zoomPasscode: "",
   };
 }
 
@@ -181,9 +188,13 @@ export function buildReminderEmail(
   const body = escapeHtml(fill(c.body));
   const firstName = escapeHtml(firstNameRaw);
 
-  const zoomLink = process.env.ZOOM_LINK;
-  const meetingId = process.env.ZOOM_MEETING_ID || (zoomLink ? extractMeetingId(zoomLink) : null);
-  const passcode = process.env.ZOOM_PASSCODE;
+  // Editable Zoom details win over the ZOOM_* env vars when provided.
+  const zoomLink = (c.zoomLink || "").trim() || process.env.ZOOM_LINK;
+  const meetingId =
+    (c.zoomMeetingId || "").trim() ||
+    process.env.ZOOM_MEETING_ID ||
+    (zoomLink ? extractMeetingId(zoomLink) : null);
+  const passcode = (c.zoomPasscode || "").trim() || process.env.ZOOM_PASSCODE;
 
   let meetingRows = "";
   if (c.includeZoom) {
