@@ -3,6 +3,7 @@ import {
   getTransporter,
   buildReminderEmail,
   defaultReminderContent,
+  personalize,
   type Recipient,
   type ReminderContent,
 } from "../../lib/eventEmail";
@@ -68,7 +69,27 @@ interface Options {
   sampleName?: string;
   audience?: Audience;
   content?: Partial<ReminderContent>;
+  // A fully pre-rendered custom email (from the newsletter composer). When
+  // present, it's sent as-is (with {{placeholders}} filled per recipient)
+  // instead of building the reminder template.
+  email?: { subject: string; html: string; text?: string };
   recipients?: Array<string | { email?: string; name?: string }>;
+}
+
+/** Build the outgoing message for one recipient — custom campaign or reminder. */
+function buildFor(
+  r: Recipient,
+  email: Options["email"],
+  content: Options["content"]
+): { subject: string; html: string; text: string; ics?: string } {
+  if (email) {
+    return {
+      subject: personalize(email.subject, r),
+      html: personalize(email.html, r),
+      text: personalize(email.text || "", r),
+    };
+  }
+  return buildReminderEmail(r, content);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -194,14 +215,14 @@ export async function POST(request: Request) {
     if (!transporter) {
       return NextResponse.json({ error: "GMAIL_USER/GMAIL_APP_PASSWORD not set." }, { status: 500 });
     }
-    const email = buildReminderEmail({ email: test, name: body.sampleName || "there" }, content);
+    const built = buildFor({ email: test, name: body.sampleName || "there" }, body.email, content);
     await transporter.sendMail({
       from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
       to: test,
-      subject: `[TEST] ${email.subject}`,
-      html: email.html,
-      text: email.text,
-      attachments: [{ filename: "the-thinking-room.ics", content: email.ics }],
+      subject: `[TEST] ${built.subject}`,
+      html: built.html,
+      text: built.text,
+      ...(built.ics ? { attachments: [{ filename: "the-thinking-room.ics", content: built.ics }] } : {}),
     });
     return NextResponse.json({ ok: true, mode: "test", sentTo: test });
   }
@@ -235,14 +256,14 @@ export async function POST(request: Request) {
   const failures: { email: string; error: string }[] = [];
   for (const r of recipients) {
     try {
-      const email = buildReminderEmail(r, content);
+      const built = buildFor(r, body.email, content);
       await transporter.sendMail({
         from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
         to: r.email,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        attachments: [{ filename: "the-thinking-room.ics", content: email.ics }],
+        subject: built.subject,
+        html: built.html,
+        text: built.text,
+        ...(built.ics ? { attachments: [{ filename: "the-thinking-room.ics", content: built.ics }] } : {}),
       });
       sentEmails.push(r.email);
     } catch (err) {

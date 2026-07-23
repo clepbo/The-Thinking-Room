@@ -282,3 +282,72 @@
   font-size: 13px;
   color: #f4efe6;
 }
+
+/* Newsletter block editor */
+.blockCard {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #0d0d0d;
+}
+.blockHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.blockType {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d1ff00;
+}
+.blockActions {
+  display: flex;
+  gap: 4px;
+}
+.blockActions button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #1a1a1a;
+  color: #ac9f8c;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.blockActions button:hover:not(:disabled) {
+  color: #f4efe6;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.blockActions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.addRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.addBtn {
+  border: 1px dashed rgba(209, 255, 0, 0.4);
+  background: rgba(209, 255, 0, 0.06);
+  color: #d1ff00;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.addBtn:hover {
+  background: rgba(209, 255, 0, 0.12);
+}
+.headerNav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

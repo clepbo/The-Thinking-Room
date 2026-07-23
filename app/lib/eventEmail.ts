@@ -107,6 +107,16 @@ export interface Recipient {
   name?: string;
 }
 
+/** Fill {{firstName}}, {{name}}, {{email}} in any string for one recipient. */
+export function personalize(str: string, r: Recipient): string {
+  const name = (r.name || "").trim();
+  const first = name.split(/\s+/)[0] || "there";
+  return str
+    .replace(/\{\{\s*firstName\s*\}\}/gi, first)
+    .replace(/\{\{\s*name\s*\}\}/gi, name || "there")
+    .replace(/\{\{\s*email\s*\}\}/gi, r.email);
+}
+
 /** The parts of the reminder the admin page lets you edit. */
 export interface ReminderContent {
   subject: string;

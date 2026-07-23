@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anton, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { site } from "./content";
 import "./globals.css";
 
@@ -37,7 +38,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${anton.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Site engagement analytics — reports once deployed to Vercel.
+            See it at Vercel → your project → Analytics. */}
+        <Analytics />
+      </body>
     </html>
   );
 }

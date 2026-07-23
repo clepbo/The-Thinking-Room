@@ -375,6 +375,56 @@ website is bound by the serverless request timeout.
 
 ---
 
+## 4f. Newsletter / digest composer (`/admin/newsletter`)
+
+A block-based editor for newsletters and updates — reached from the "Newsletter"
+link in the Reminder Console, or directly at `/admin/newsletter` (same admin
+token).
+
+- **Blocks**: heading, text, image, button, video, divider, spacer. Add,
+  reorder (↑/↓), and delete. Text blocks support `**bold**` and
+  `[links](https://…)`; `{{firstName}}` personalises per recipient.
+- **Video**: email clients can't play video, so a video block becomes a
+  clickable thumbnail that opens the link (YouTube thumbnails are automatic).
+- **Images**: paste an image URL (the image must be hosted somewhere public —
+  uploading files from the page will come with the Supabase phase).
+- **Light or dark** theme, live preview, send-a-test, and the same audience
+  picker + **batched sending** as the reminder console (so no 504).
+
+### Sending in batches (why the 504 happened, and the fix)
+
+Both consoles now send in **batches of ~12 per request** straight from your
+browser, showing a live delivered/failed count. Each request finishes quickly,
+so it never hits Vercel's timeout. Keep the tab open until it completes. (True
+background/queued sending, plus **open & click tracking**, comes with the
+Supabase phase — see below.)
+
+---
+
+## Website analytics
+
+`@vercel/analytics` is wired into the site (`app/layout.tsx`). After you deploy,
+enable **Analytics** in your Vercel project dashboard to see visits, page views,
+top pages, and referrers. No code changes needed.
+
+---
+
+## What's next (the Supabase phase)
+
+These need the database you chose (Supabase) and will be built next:
+
+- **CMS**: publish events/updates from the dashboard straight to the website
+  (so The Thinking Room becomes a managed, monthly-updatable section).
+- **Real-time dashboard**: campaign history, delivered counts, and open/click
+  tracking (via a tracking pixel + redirect links logged to Supabase).
+- **Saved audiences & unsubscribe list** stored in the database.
+
+To get ready, create a free project at https://supabase.com and keep the
+**Project URL** and **service_role key** handy — that's all I'll need to wire it
+up.
+
+---
+
 ## 5. Project structure
 
 ```
@@ -390,7 +440,9 @@ app/
   admin/
     page.tsx        ← the /admin Reminder Console (compose, preview, send)
     AdminConsole.tsx
+    newsletter/     ← the /admin/newsletter composer (block editor + send)
   lib/
+    campaign.ts     ← turns newsletter blocks into email-safe HTML
     eventEmail.ts   ← shared email helpers + the reminder email template
 components/
   Nav.tsx           ← top navigation (with mobile menu)

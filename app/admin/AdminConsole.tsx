@@ -233,9 +233,14 @@ export default function AdminConsole() {
             Edit the reminder, preview it live, send yourself a test, then send to every registrant.
           </p>
         </div>
-        <button className={styles.lockBtn} onClick={lock}>
-          Lock
-        </button>
+        <div className={styles.headerNav}>
+          <a className={styles.lockBtn} href="/admin/newsletter">
+            Newsletter →
+          </a>
+          <button className={styles.lockBtn} onClick={lock}>
+            Lock
+          </button>
+        </div>
       </div>
 
       <div className={styles.grid}>
