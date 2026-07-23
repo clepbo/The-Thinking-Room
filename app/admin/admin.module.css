@@ -1,0 +1,284 @@
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #f4efe6;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 32px clamp(16px, 4vw, 48px) 80px;
+}
+
+.header {
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(221, 37, 37, 0.25);
+  padding-bottom: 20px;
+}
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.title span {
+  color: #dd2525;
+}
+.subtitle {
+  margin: 4px 0 0;
+  color: #8a8a8a;
+  font-size: 13px;
+}
+.lockBtn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ac9f8c;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lockBtn:hover {
+  color: #f4efe6;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Lock screen */
+.lockCard {
+  max-width: 420px;
+  margin: 10vh auto 0;
+  background: #111;
+  border: 1px solid rgba(221, 37, 37, 0.3);
+  border-radius: 10px;
+  padding: 32px;
+  text-align: center;
+}
+.lockCard h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.lockCard p {
+  margin: 0 0 20px;
+  color: #8a8a8a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Layout */
+.grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 22px;
+}
+.panelTitle {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d1ff00;
+}
+.panelHint {
+  margin: 0 0 18px;
+  font-size: 12px;
+  color: #6d6353;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ac9f8c;
+  margin-bottom: 6px;
+}
+.input,
+.textarea {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  color: #f4efe6;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+}
+.textarea {
+  resize: vertical;
+  min-height: 68px;
+  line-height: 1.55;
+}
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #dd2525;
+  box-shadow: 0 0 0 3px rgba(221, 37, 37, 0.18);
+}
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #f4efe6;
+  cursor: pointer;
+}
+.checkboxRow input {
+  width: 16px;
+  height: 16px;
+  accent-color: #dd2525;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.row .field {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.btn {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #1a1a1a;
+  color: #f4efe6;
+  border-radius: 6px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btnPrimary {
+  background: linear-gradient(180deg, #ff4d4d, #dd2525);
+  border-color: transparent;
+  color: #fff;
+}
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btnLime {
+  background: #d1ff00;
+  border-color: transparent;
+  color: #14210a;
+}
+.btnDanger {
+  background: #dd2525;
+  border-color: transparent;
+  color: #fff;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 22px 0;
+}
+
+.status {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.statusOk {
+  background: rgba(120, 180, 120, 0.12);
+  border: 1px solid rgba(120, 180, 120, 0.4);
+  color: #bfe3bf;
+}
+.statusErr {
+  background: rgba(221, 37, 37, 0.12);
+  border: 1px solid rgba(221, 37, 37, 0.4);
+  color: #f0b3b3;
+}
+.statusInfo {
+  background: rgba(209, 255, 0, 0.08);
+  border: 1px solid rgba(209, 255, 0, 0.3);
+  color: #e7f5a0;
+}
+
+.recipients {
+  margin-top: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+.recipientRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.recipientRow:last-child {
+  border-bottom: 0;
+}
+.recipientRow span:last-child {
+  color: #8a8a8a;
+}
+
+.previewBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.previewSubject {
+  font-size: 13px;
+  color: #ac9f8c;
+}
+.previewSubject b {
+  color: #f4efe6;
+}
+.previewFrame {
+  width: 100%;
+  height: 640px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #0a0a0a;
+}
+
+.confirmBox {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(221, 37, 37, 0.4);
+  border-radius: 8px;
+  background: rgba(221, 37, 37, 0.08);
+}
+.confirmBox p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #f4efe6;
+}

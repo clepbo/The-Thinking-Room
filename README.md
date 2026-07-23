@@ -336,11 +336,11 @@ below — all in one file.
 Gmail allows ~500 emails/day from a normal account (2,000/day on Workspace) —
 plenty for a seat-limited event. The script logs your remaining quota after it runs.
 
-### 4e-ii. From the website (protected API endpoint)
+### 4e-ii. From the website — the Reminder Console page (`/admin`)
 
-`POST /api/send-reminders` does the same thing from the site: it reads the
-registrant list from your sheet and emails each one via Gmail. Useful for
-repeat use or triggering from your phone/laptop without opening Apps Script.
+Go to **`https://YOUR-SITE/admin`** for a full page where you can **edit the
+reminder, preview it live, send yourself a test, and send to everyone** — no
+terminal, no Apps Script editor. This is the friendliest option for repeat use.
 
 **Setup (one time):**
 
@@ -350,32 +350,28 @@ repeat use or triggering from your phone/laptop without opening Apps Script.
 
    | Name              | Value                                                   |
    | ----------------- | ------------------------------------------------------- |
-   | `ADMIN_TOKEN`     | a long random secret (whoever triggers this needs it)   |
+   | `ADMIN_TOKEN`     | a long random secret — this is the console's password   |
    | `SHEET_API_TOKEN` | the **same** value as `CONFIG.API_TOKEN` in Code.gs     |
 
    (`GMAIL_USER`, `GMAIL_APP_PASSWORD`, `ZOOM_LINK`, and `SHEET_WEBHOOK_URL` are
    already set from earlier steps.) **Redeploy.**
+3. Open `/admin`, enter your `ADMIN_TOKEN`, and you're in. Edit the subject,
+   headline, and paragraphs; the preview on the right updates as you type.
+   `{{firstName}}`, `{{date}}`, `{{time}}`, and `{{edition}}` are filled in per
+   person. Send a test to yourself, then **Load recipients → Send**. Everyone
+   sent is marked in the sheet's "Reminded At" column so they won't be emailed
+   twice.
 
-**Use it** from a terminal (replace `YOUR-SITE` and the token):
+The page is unlisted (not in search engines) and every action requires the
+token, which is checked on the server.
 
-```bash
-# 1) Test — one reminder to yourself:
-curl -X POST https://YOUR-SITE/api/send-reminders \
-  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" \
-  -d '{"test":"you@example.com"}'
-
-# 2) Dry run — see who WOULD get it (sends nothing):
-curl -X POST https://YOUR-SITE/api/send-reminders \
-  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" \
-  -d '{"dryRun":true}'
-
-# 3) Send for real (skips anyone already reminded):
-curl -X POST https://YOUR-SITE/api/send-reminders \
-  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{}'
-```
+> **Prefer the command line?** The same endpoint works with `curl` — e.g.
+> `curl -X POST https://YOUR-SITE/api/send-reminders -H "x-admin-token: TOKEN"
+> -H "Content-Type: application/json" -d '{"test":"you@example.com"}'`. Body
+> options: `{ test, dryRun, resend, content, recipients }`.
 
 For very large lists the Apps Script way (4e-i) is more reliable, since the
-endpoint is bound by the serverless request timeout.
+website is bound by the serverless request timeout.
 
 ---
 
@@ -391,6 +387,9 @@ app/
     route.ts        ← handles form submissions + the confirmation email
   api/send-reminders/
     route.ts        ← protected endpoint to email all registrants a reminder
+  admin/
+    page.tsx        ← the /admin Reminder Console (compose, preview, send)
+    AdminConsole.tsx
   lib/
     eventEmail.ts   ← shared email helpers + the reminder email template
 components/

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getTransporter, buildReminderEmail, type Recipient } from "../../lib/eventEmail";
+import {
+  getTransporter,
+  buildReminderEmail,
+  defaultReminderContent,
+  type Recipient,
+  type ReminderContent,
+} from "../../lib/eventEmail";
 
 /**
  * ============================================================================
@@ -58,6 +64,9 @@ interface Options {
   test?: string;
   dryRun?: boolean;
   resend?: boolean;
+  preview?: boolean;
+  sampleName?: string;
+  content?: Partial<ReminderContent>;
   recipients?: Array<string | { email?: string; name?: string }>;
 }
 
@@ -151,7 +160,18 @@ export async function POST(request: Request) {
   const dryRun = body.dryRun ?? url.searchParams.get("dryRun") === "1";
   const resend = body.resend ?? url.searchParams.get("resend") === "1";
   const test = body.test || url.searchParams.get("test") || "";
+  const content = body.content;
   const transporter = getTransporter();
+
+  // --- Preview: render the email without sending (powers the admin editor). ---
+  if (body.preview) {
+    const merged = { ...defaultReminderContent(), ...(content || {}) };
+    const built = buildReminderEmail(
+      { email: "preview@example.com", name: body.sampleName || "Ada" },
+      merged
+    );
+    return NextResponse.json({ ok: true, mode: "preview", subject: built.subject, html: built.html, content: merged });
+  }
 
   // --- Single test send: ignores the list entirely. ---
   if (test) {
@@ -161,7 +181,7 @@ export async function POST(request: Request) {
     if (!transporter) {
       return NextResponse.json({ error: "GMAIL_USER/GMAIL_APP_PASSWORD not set." }, { status: 500 });
     }
-    const email = buildReminderEmail({ email: test, name: "there" });
+    const email = buildReminderEmail({ email: test, name: body.sampleName || "there" }, content);
     await transporter.sendMail({
       from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
       to: test,
@@ -202,7 +222,7 @@ export async function POST(request: Request) {
   const failures: { email: string; error: string }[] = [];
   for (const r of recipients) {
     try {
-      const email = buildReminderEmail(r);
+      const email = buildReminderEmail(r, content);
       await transporter.sendMail({
         from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
         to: r.email,
