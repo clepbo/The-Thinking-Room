@@ -66,6 +66,7 @@ interface Options {
   resend?: boolean;
   preview?: boolean;
   sampleName?: string;
+  audience?: Audience;
   content?: Partial<ReminderContent>;
   recipients?: Array<string | { email?: string; name?: string }>;
 }
@@ -86,13 +87,22 @@ function normalizeRecipients(list: Options["recipients"]): Recipient[] {
   return out;
 }
 
-/** Read the registrant list from the Google Sheet via the Apps Script web app. */
-async function fetchRecipientsFromSheet(resend: boolean): Promise<Recipient[]> {
+type Audience = "event" | "journal" | "all";
+
+function inAudience(type: string, audience: Audience) {
+  const isJournal = type.toLowerCase().includes("journal");
+  if (audience === "journal") return isJournal;
+  if (audience === "all") return true;
+  return !isJournal; // "event" — event registrations (and any untyped rows)
+}
+
+/** Read the list from the Google Sheet, filtered by audience and de-duplicated. */
+async function fetchRecipientsFromSheet(resend: boolean, audience: Audience): Promise<Recipient[]> {
   const base = process.env.SHEET_WEBHOOK_URL;
   const token = process.env.SHEET_API_TOKEN;
   if (!base || !token) {
     throw new Error(
-      "To read the registrant list, set SHEET_WEBHOOK_URL and SHEET_API_TOKEN (and add the doGet/markReminded code from apps-script/Code.gs to your sheet)."
+      "To read the list, set SHEET_WEBHOOK_URL and SHEET_API_TOKEN (and add the doGet/markReminded code from apps-script/Code.gs to your sheet)."
     );
   }
   const url = `${base}${base.includes("?") ? "&" : "?"}action=list&token=${encodeURIComponent(token)}`;
@@ -105,13 +115,15 @@ async function fetchRecipientsFromSheet(resend: boolean): Promise<Recipient[]> {
   };
   if (!data.ok) throw new Error(`Sheet API error: ${data.error || "unknown"}`);
 
+  // De-dupe by email across both lists, so someone on the journal AND the
+  // registration list is only emailed once.
   const seen = new Set<string>();
   const out: Recipient[] = [];
   for (const r of data.registrants || []) {
     const email = String(r.email || "").trim().toLowerCase();
-    const type = String(r.type || "").trim().toLowerCase();
+    const type = String(r.type || "").trim();
     if (!EMAIL_RE.test(email) || seen.has(email)) continue;
-    if (type && type !== "event registration") continue;
+    if (!inAudience(type, audience)) continue;
     if (!resend && r.remindedAt) continue;
     seen.add(email);
     out.push({ email, name: String(r.name || "") });
@@ -160,6 +172,7 @@ export async function POST(request: Request) {
   const dryRun = body.dryRun ?? url.searchParams.get("dryRun") === "1";
   const resend = body.resend ?? url.searchParams.get("resend") === "1";
   const test = body.test || url.searchParams.get("test") || "";
+  const audience: Audience = body.audience || "event";
   const content = body.content;
   const transporter = getTransporter();
 
@@ -199,7 +212,7 @@ export async function POST(request: Request) {
     recipients =
       body.recipients && body.recipients.length
         ? normalizeRecipients(body.recipients)
-        : await fetchRecipientsFromSheet(resend);
+        : await fetchRecipientsFromSheet(resend, audience);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },

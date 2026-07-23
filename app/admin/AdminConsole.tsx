@@ -16,6 +16,12 @@ interface Recipient {
   name?: string;
 }
 
+type Audience = "event" | "journal" | "all";
+
+// Emails per request. Kept small so each request finishes well under the
+// serverless timeout — this is what fixes the 504 on large lists.
+const BATCH_SIZE = 12;
+
 const EMPTY_CONTENT: Content = {
   subject: "",
   heading: "",
@@ -38,12 +44,14 @@ export default function AdminConsole() {
   const [recipients, setRecipients] = useState<Recipient[] | null>(null);
   const [showList, setShowList] = useState(false);
   const [resend, setResend] = useState(false);
+  const [audience, setAudience] = useState<Audience>("event");
   const [loadingRecipients, setLoadingRecipients] = useState(false);
 
   const [testEmail, setTestEmail] = useState("");
   const [testStatus, setTestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
+  const [progress, setProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   /** POST to the reminder endpoint with the admin token attached. */
@@ -116,7 +124,8 @@ export default function AdminConsole() {
   async function loadRecipients() {
     setLoadingRecipients(true);
     setSendResult(null);
-    const { status, data } = await api({ dryRun: true, resend });
+    setProgress(null);
+    const { status, data } = await api({ dryRun: true, resend, audience });
     setLoadingRecipients(false);
     if (status === 200) {
       setRecipients(data.recipients as Recipient[]);
@@ -139,19 +148,46 @@ export default function AdminConsole() {
     );
   }
 
+  /**
+   * Send in small batches from the browser. Each request emails only
+   * BATCH_SIZE people, so it finishes quickly (no 504), and we accumulate a
+   * live delivered count. Successful sends are marked in the sheet, so if this
+   * is interrupted you can reload recipients and send again to finish the rest.
+   */
   async function sendAll() {
+    if (!recipients) return;
+    const list = recipients;
     setSending(true);
     setConfirmSend(false);
     setSendResult(null);
-    const { status, data } = await api({ content, resend });
-    setSending(false);
-    if (status === 200) {
-      const failed = data.failed ? ` · ${data.failed} failed` : "";
-      setSendResult({ ok: true, msg: `Sent to ${data.sent} registrant(s)${failed}.` });
-      loadRecipients();
-    } else {
-      setSendResult({ ok: false, msg: data.error || `Failed (${status}).` });
+    let sent = 0;
+    let failed = 0;
+    setProgress({ sent: 0, failed: 0, total: list.length });
+
+    for (let i = 0; i < list.length; i += BATCH_SIZE) {
+      const batch = list.slice(i, i + BATCH_SIZE);
+      try {
+        const { status, data } = await api({ recipients: batch, content });
+        if (status === 200) {
+          sent += (data.sent as number) || 0;
+          failed += (data.failed as number) || 0;
+        } else {
+          failed += batch.length;
+        }
+      } catch {
+        failed += batch.length;
+      }
+      setProgress({ sent, failed, total: list.length });
+      if (i + BATCH_SIZE < list.length) await new Promise((r) => setTimeout(r, 400));
     }
+
+    setSending(false);
+    setSendResult({
+      ok: failed === 0,
+      msg: `Delivered ${sent} of ${list.length}${failed ? ` · ${failed} failed. Reload recipients and send again to retry those.` : ". All done."}`,
+    });
+    // Note: successful sends are marked in the sheet, so click "Load recipients"
+    // again to see who's left (e.g. to retry failures) without re-emailing anyone.
   }
 
   const set = (patch: Partial<Content>) => setContent((c) => ({ ...c, ...patch }));
@@ -288,15 +324,49 @@ export default function AdminConsole() {
           <div className={styles.divider} />
 
           <p className={styles.panelTitle}>Send to everyone</p>
-          <div className={styles.row} style={{ marginTop: 10 }}>
+          <div className={styles.field} style={{ marginTop: 10 }}>
+            <label className={styles.label}>Who to email</label>
+            <select
+              className={styles.input}
+              value={audience}
+              onChange={(e) => {
+                setAudience(e.target.value as Audience);
+                setRecipients(null);
+              }}
+            >
+              <option value="event">Event registrants</option>
+              <option value="journal">Journal subscribers</option>
+              <option value="all">Everyone — registrants + journal (de-duplicated)</option>
+            </select>
+          </div>
+          <div className={styles.row}>
             <button className={styles.btn} onClick={loadRecipients} disabled={loadingRecipients}>
               {loadingRecipients ? "Loading…" : "Load recipients"}
             </button>
             <label className={styles.checkboxRow} style={{ marginLeft: 4 }}>
               <input type="checkbox" checked={resend} onChange={(e) => setResend(e.target.checked)} />
-              Include already-reminded
+              Include already-sent
             </label>
           </div>
+
+          {progress && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ height: 8, background: "#222", borderRadius: 4, overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.round(((progress.sent + progress.failed) / Math.max(progress.total, 1)) * 100)}%`,
+                    background: "#d1ff00",
+                    transition: "width .3s",
+                  }}
+                />
+              </div>
+              <p style={{ fontSize: 13, color: "#ac9f8c", marginTop: 6 }}>
+                {sending ? "Sending…" : "Done."} {progress.sent} delivered
+                {progress.failed ? `, ${progress.failed} failed` : ""} of {progress.total}
+              </p>
+            </div>
+          )}
 
           {recipients && (
             <>
