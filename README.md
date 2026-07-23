@@ -308,6 +308,32 @@ this on before you have the final Zoom link and fill it in later.
 
 ---
 
+## 4e. Send a reminder email to everyone who registered
+
+When you want to remind all registrants (e.g. on the day of the event), use
+the script at **`apps-script/send-reminders.gs`**. It reads your Registrations
+sheet and emails every event registrant from your own Gmail — no website
+redeploy, no extra services.
+
+1. Open your sheet → **Extensions → Apps Script** (the same project that has
+   `doPost`).
+2. Paste the contents of `apps-script/send-reminders.gs` **below** your existing
+   code and Save.
+3. Fill in the `CONFIG` block at the top (Zoom link/ID/passcode, date, time,
+   and a `TEST_EMAIL` — your own address).
+4. Run the functions in this order (pick each from the function dropdown):
+   - **`sendReminderTest`** → sends one copy to your `TEST_EMAIL`. Eyeball it.
+   - **`previewReminders`** → sends nothing; **View → Logs** shows exactly who
+     would receive it, and how many.
+   - **`sendReminders`** → sends to everyone. Each person is stamped in a
+     **"Reminded At"** column, so a second run won't email them again.
+
+Gmail allows ~500 emails/day from a normal account (2,000/day on Workspace),
+which is plenty for a seat-limited event. The script logs your remaining quota
+after it runs.
+
+---
+
 ## 5. Project structure
 
 ```
@@ -327,6 +353,8 @@ components/
 public/
   logo.png            ← the wordmark used in the nav + footer
   hero-portrait.webp  ← the photo in the hero section
+apps-script/
+  send-reminders.gs   ← paste into your sheet's Apps Script to email registrants
 ```
 
 ---
