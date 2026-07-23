@@ -409,19 +409,37 @@ top pages, and referrers. No code changes needed.
 
 ---
 
-## What's next (the Supabase phase)
+## Events CMS (Supabase) — setup
 
-These need the database you chose (Supabase) and will be built next:
+The **Events CMS** lets you create events in the dashboard and publish them to
+the website at **`/events`**. It's built on Supabase. To turn it on:
 
-- **CMS**: publish events/updates from the dashboard straight to the website
-  (so The Thinking Room becomes a managed, monthly-updatable section).
+1. **Run the schema.** In your Supabase project → **SQL Editor** → paste the
+   whole of **`supabase/schema.sql`** → **Run**. (Safe to re-run.)
+2. **Add env vars** in Vercel → Settings → Environment Variables (server-side —
+   never put the secret key in code):
+
+   | Name                  | Value                                  |
+   | --------------------- | -------------------------------------- |
+   | `SUPABASE_URL`        | your project URL (`https://….supabase.co`) |
+   | `SUPABASE_SECRET_KEY` | the `sb_secret_…` key                  |
+
+   `ADMIN_TOKEN` (already set) also gates the CMS.
+3. **Redeploy.** Then open **`/admin/events`**, enter your admin token, and
+   create an event. "Save & publish" makes it appear on `/events`.
+
+Until Supabase is configured, `/events` simply shows "No events published yet"
+and the CMS reports that it isn't connected — the rest of the site is unaffected.
+
+> **Security:** the secret key is server-only and bypasses row-level security.
+> Keep it in Vercel env vars, never in the repo. If it's ever exposed, rotate it
+> in the Supabase dashboard.
+
+### Still to come (next Supabase steps)
+
 - **Real-time dashboard**: campaign history, delivered counts, and open/click
-  tracking (via a tracking pixel + redirect links logged to Supabase).
-- **Saved audiences & unsubscribe list** stored in the database.
-
-To get ready, create a free project at https://supabase.com and keep the
-**Project URL** and **service_role key** handy — that's all I'll need to wire it
-up.
+  tracking (tracking pixel + redirect links logged to Supabase).
+- **Saved audiences & an unsubscribe list** stored in the database.
 
 ---
 

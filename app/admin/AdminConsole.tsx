@@ -241,7 +241,10 @@ export default function AdminConsole() {
         </div>
         <div className={styles.headerNav}>
           <a className={styles.lockBtn} href="/admin/newsletter">
-            Newsletter →
+            Newsletter
+          </a>
+          <a className={styles.lockBtn} href="/admin/events">
+            Events CMS
           </a>
           <button className={styles.lockBtn} onClick={lock}>
             Lock
