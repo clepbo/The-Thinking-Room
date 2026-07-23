@@ -310,27 +310,72 @@ this on before you have the final Zoom link and fill it in later.
 
 ## 4e. Send a reminder email to everyone who registered
 
-When you want to remind all registrants (e.g. on the day of the event), use
-the script at **`apps-script/send-reminders.gs`**. It reads your Registrations
-sheet and emails every event registrant from your own Gmail — no website
-redeploy, no extra services.
+There are two ways to do this. **The Apps Script way is simplest and works
+today with no redeploy — use it unless you specifically want the endpoint.**
 
-1. Open your sheet → **Extensions → Apps Script** (the same project that has
-   `doPost`).
-2. Paste the contents of `apps-script/send-reminders.gs` **below** your existing
-   code and Save.
-3. Fill in the `CONFIG` block at the top (Zoom link/ID/passcode, date, time,
-   and a `TEST_EMAIL` — your own address).
-4. Run the functions in this order (pick each from the function dropdown):
+### 4e-i. From your Google Sheet (recommended — nothing to deploy)
+
+**`apps-script/Code.gs`** is the complete script for your sheet. It handles new
+registrations, the reminder senders, *and* (optionally) the website endpoint
+below — all in one file.
+
+1. Open your sheet → **Extensions → Apps Script**. Select all, delete, and paste
+   the entire contents of **`apps-script/Code.gs`**. Save.
+2. Fill in the `CONFIG` block at the top (Zoom link/ID/passcode, date, time, and
+   a `TEST_EMAIL` — your own address).
+3. **Re-publish** so the site keeps working: **Deploy → Manage deployments →
+   ✏️ Edit → Version: New version → Deploy.** (The web-app URL stays the same.)
+4. Run the reminder functions in order (pick each from the function dropdown,
+   click **Run**; approve the Gmail permission the first time):
    - **`sendReminderTest`** → sends one copy to your `TEST_EMAIL`. Eyeball it.
    - **`previewReminders`** → sends nothing; **View → Logs** shows exactly who
      would receive it, and how many.
    - **`sendReminders`** → sends to everyone. Each person is stamped in a
      **"Reminded At"** column, so a second run won't email them again.
 
-Gmail allows ~500 emails/day from a normal account (2,000/day on Workspace),
-which is plenty for a seat-limited event. The script logs your remaining quota
-after it runs.
+Gmail allows ~500 emails/day from a normal account (2,000/day on Workspace) —
+plenty for a seat-limited event. The script logs your remaining quota after it runs.
+
+### 4e-ii. From the website (protected API endpoint)
+
+`POST /api/send-reminders` does the same thing from the site: it reads the
+registrant list from your sheet and emails each one via Gmail. Useful for
+repeat use or triggering from your phone/laptop without opening Apps Script.
+
+**Setup (one time):**
+
+1. Make sure `apps-script/Code.gs` is pasted into your sheet (4e-i) and set a
+   long random `API_TOKEN` in its `CONFIG`, then re-publish.
+2. In Vercel → **Settings → Environment Variables**, add:
+
+   | Name              | Value                                                   |
+   | ----------------- | ------------------------------------------------------- |
+   | `ADMIN_TOKEN`     | a long random secret (whoever triggers this needs it)   |
+   | `SHEET_API_TOKEN` | the **same** value as `CONFIG.API_TOKEN` in Code.gs     |
+
+   (`GMAIL_USER`, `GMAIL_APP_PASSWORD`, `ZOOM_LINK`, and `SHEET_WEBHOOK_URL` are
+   already set from earlier steps.) **Redeploy.**
+
+**Use it** from a terminal (replace `YOUR-SITE` and the token):
+
+```bash
+# 1) Test — one reminder to yourself:
+curl -X POST https://YOUR-SITE/api/send-reminders \
+  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"test":"you@example.com"}'
+
+# 2) Dry run — see who WOULD get it (sends nothing):
+curl -X POST https://YOUR-SITE/api/send-reminders \
+  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"dryRun":true}'
+
+# 3) Send for real (skips anyone already reminded):
+curl -X POST https://YOUR-SITE/api/send-reminders \
+  -H "x-admin-token: YOUR_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{}'
+```
+
+For very large lists the Apps Script way (4e-i) is more reliable, since the
+endpoint is bound by the serverless request timeout.
 
 ---
 
@@ -344,6 +389,10 @@ app/
   page.tsx          ← assembles the sections into the page
   api/register/
     route.ts        ← handles form submissions + the confirmation email
+  api/send-reminders/
+    route.ts        ← protected endpoint to email all registrants a reminder
+  lib/
+    eventEmail.ts   ← shared email helpers + the reminder email template
 components/
   Nav.tsx           ← top navigation (with mobile menu)
   Icons.tsx         ← all inline SVG icons
@@ -354,7 +403,8 @@ public/
   logo.png            ← the wordmark used in the nav + footer
   hero-portrait.webp  ← the photo in the hero section
 apps-script/
-  send-reminders.gs   ← paste into your sheet's Apps Script to email registrants
+  Code.gs             ← the complete Google Sheet script (registrations,
+                        reminder senders, and the endpoint's read/mark API)
 ```
 
 ---
