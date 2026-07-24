@@ -381,15 +381,36 @@ A block-based editor for newsletters and updates — reached from the "Newslette
 link in the Reminder Console, or directly at `/admin/newsletter` (same admin
 token).
 
-- **Blocks**: heading, text, image, button, video, divider, spacer. Add,
-  reorder (↑/↓), and delete. Text blocks support `**bold**` and
-  `[links](https://…)`; `{{firstName}}` personalises per recipient.
+- **Blocks**: heading, text, image, button, video, file, divider, spacer. Add,
+  reorder (↑/↓), and delete.
+- **Text blocks** have a real formatting toolbar — bold, italic, underline,
+  bulleted/numbered lists, alignment, font family, and size, plus links. Type
+  `{{firstName}}` anywhere to personalise per recipient.
+- **Image / File uploads**: upload straight from your computer (images, and
+  documents like PDF/Word) — click "Upload image"/"Upload file". Files go to
+  Supabase Storage and are auto-deleted after they expire (see below), so
+  storage never fills up. You can still paste a URL instead.
 - **Video**: email clients can't play video, so a video block becomes a
   clickable thumbnail that opens the link (YouTube thumbnails are automatic).
-- **Images**: paste an image URL (the image must be hosted somewhere public —
-  uploading files from the page will come with the Supabase phase).
 - **Light or dark** theme, live preview, send-a-test, and the same audience
   picker + **batched sending** as the reminder console (so no 504).
+
+### Uploads & auto-cleanup
+
+Uploads need Supabase (the same `SUPABASE_URL` + `SUPABASE_SECRET_KEY`). The
+upload route creates a public Storage bucket named `media` automatically. Each
+file is recorded with an expiry and **auto-deleted by a daily cron** (configured
+in `vercel.json` → `/api/cron/cleanup`), so old media is cleared for you.
+
+Optional env vars:
+
+| Name             | Value                                                      |
+| ---------------- | ---------------------------------------------------------- |
+| `MEDIA_TTL_DAYS` | Days a file lives before auto-delete (default **90**; `0` = never) |
+| `CRON_SECRET`    | Set this and Vercel Cron authenticates the cleanup call    |
+
+(Server-proxied uploads are capped at ~4 MB per file; larger-file support via
+direct-to-storage can be added later.)
 
 ### Sending in batches (why the 504 happened, and the fix)
 

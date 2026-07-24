@@ -476,3 +476,74 @@
   gap: 8px;
   align-items: center;
 }
+
+/* Rich text editor */
+.rtWrap {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+.rtToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  background: #151515;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.rtBtn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  background: none;
+  color: #d8d2c6;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.rtBtn:first-child {
+  font-weight: 800;
+}
+.rtBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.rtSep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 0 4px;
+}
+.rtSelect {
+  height: 30px;
+  background: #0a0a0a;
+  color: #d8d2c6;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  font-size: 12px;
+  padding: 0 6px;
+  cursor: pointer;
+}
+.rtEditor {
+  min-height: 120px;
+  padding: 12px 14px;
+  color: #f4efe6;
+  font-size: 15px;
+  line-height: 1.6;
+  outline: none;
+}
+.rtEditor:empty::before {
+  content: "Write your message…";
+  color: #6d6353;
+}
+.rtEditor a {
+  color: #ff6a6a;
+}
+.rtEditor ul,
+.rtEditor ol {
+  padding-left: 22px;
+}

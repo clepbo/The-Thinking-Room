@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import styles from "../admin.module.css";
 import { useAdminToken } from "../auth";
+import RichText from "../RichText";
+import UploadButton from "../UploadButton";
 import {
   type Block,
   type CampaignMeta,
@@ -18,13 +20,14 @@ interface Recipient {
 }
 type Audience = "event" | "journal" | "all";
 const BATCH_SIZE = 12;
-const BLOCK_TYPES: Block["type"][] = ["heading", "text", "image", "button", "video", "divider", "spacer"];
+const BLOCK_TYPES: Block["type"][] = ["heading", "text", "image", "button", "video", "file", "divider", "spacer"];
 const BLOCK_LABEL: Record<Block["type"], string> = {
   heading: "Heading",
   text: "Text",
   image: "Image",
   button: "Button",
   video: "Video",
+  file: "File",
   divider: "Divider",
   spacer: "Spacer",
 };
@@ -184,8 +187,8 @@ export default function NewsletterComposer() {
           <div className={styles.divider} />
           <p className={styles.panelTitle}>Content blocks</p>
           <p className={styles.panelHint}>
-            Use <code>{"{{firstName}}"}</code> to personalise. In text blocks, <code>**bold**</code> and{" "}
-            <code>[link](https://…)</code> work.
+            Text blocks have a formatting toolbar (bold, italic, lists, alignment, size, links). Type{" "}
+            <code>{"{{firstName}}"}</code> anywhere to personalise per recipient.
           </p>
 
           {blocks.map((b, i) => (
@@ -302,11 +305,14 @@ function BlockEditor({ block, onChange }: { block: Block; onChange: (patch: Part
         </div>
       );
     case "text":
-      return <textarea className={styles.textarea} value={block.text} onChange={(e) => onChange({ text: e.target.value })} rows={4} />;
+      return <RichText value={block.html} onChange={(html) => onChange({ html })} />;
     case "image":
       return (
         <>
-          {input({ value: block.src, onChange: (e) => onChange({ src: e.target.value }), placeholder: "Image URL (https://…)" })}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ flex: 1 }}>{input({ value: block.src, onChange: (e) => onChange({ src: e.target.value }), placeholder: "Image URL, or upload →" })}</div>
+            <UploadButton accept="image/*" label="Upload image" onUploaded={(url) => onChange({ src: url })} />
+          </div>
           <div style={{ height: 8 }} />
           <div className={styles.row}>
             <div className={styles.field}>{input({ value: block.alt, onChange: (e) => onChange({ alt: e.target.value }), placeholder: "Alt text" })}</div>
@@ -330,6 +336,17 @@ function BlockEditor({ block, onChange }: { block: Block; onChange: (patch: Part
             <div className={styles.field}>{input({ value: block.label, onChange: (e) => onChange({ label: e.target.value }), placeholder: "Link label" })}</div>
             <div className={styles.field}>{input({ value: block.thumbnail, onChange: (e) => onChange({ thumbnail: e.target.value }), placeholder: "Thumbnail URL (auto for YouTube)" })}</div>
           </div>
+        </>
+      );
+    case "file":
+      return (
+        <>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ flex: 1 }}>{input({ value: block.url, onChange: (e) => onChange({ url: e.target.value }), placeholder: "File URL, or upload →" })}</div>
+            <UploadButton accept=".pdf,.doc,.docx,.txt,image/*" label="Upload file" onUploaded={(url, name) => onChange({ url, label: block.label || `Download ${name}` })} />
+          </div>
+          <div style={{ height: 8 }} />
+          {input({ value: block.label, onChange: (e) => onChange({ label: e.target.value }), placeholder: "Button label (e.g. Download the report)" })}
         </>
       );
     case "spacer":

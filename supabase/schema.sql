@@ -42,7 +42,27 @@ create policy "published events are public"
   on public.events for select
   using (status = 'published');
 
+-- ------------------------------------------------------------ media (uploads)
+-- Tracks files uploaded from the admin (images + documents) so they can be
+-- auto-deleted after they expire (see /api/cron/cleanup) and never fill storage.
+create table if not exists public.media (
+  id          uuid primary key default gen_random_uuid(),
+  path        text not null,              -- storage object path
+  url         text not null,              -- public URL
+  kind        text not null default 'file',
+  bytes       bigint,
+  created_at  timestamptz not null default now(),
+  expires_at  timestamptz                 -- null = never auto-delete
+);
+create index if not exists media_expires_idx on public.media (expires_at);
+
+alter table public.media enable row level security;
+-- No public policies: uploads/reads happen server-side with the secret key.
+
+-- Uploaded files live in a Storage bucket named "media". The upload route
+-- creates it automatically (public) on first use, so no manual step is needed.
+
 -- ============================================================================
---  (Coming next: subscribers, campaigns, and email_events for the dashboard
---   and open/click tracking. They'll be added here when we build that phase.)
+--  (Coming next: scheduled_campaigns + email_events for scheduled sends and
+--   open/click tracking. They'll be added here when we build those.)
 -- ============================================================================

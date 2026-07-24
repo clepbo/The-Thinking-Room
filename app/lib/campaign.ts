@@ -8,10 +8,11 @@
 
 export type Block =
   | { id: string; type: "heading"; text: string; align: "left" | "center" }
-  | { id: string; type: "text"; text: string }
+  | { id: string; type: "text"; html: string }
   | { id: string; type: "image"; src: string; alt: string; href: string }
   | { id: string; type: "button"; label: string; href: string; align: "left" | "center" }
   | { id: string; type: "video"; href: string; thumbnail: string; label: string }
+  | { id: string; type: "file"; url: string; label: string }
   | { id: string; type: "divider" }
   | { id: string; type: "spacer"; size: "sm" | "md" | "lg" };
 
@@ -30,13 +31,15 @@ export function emptyBlock(type: Block["type"]): Block {
     case "heading":
       return { id, type, text: "Your headline", align: "left" };
     case "text":
-      return { id, type, text: "Write your message here. You can **bold** text and add [links](https://example.com)." };
+      return { id, type, html: "<p>Write your message here.</p>" };
     case "image":
       return { id, type, src: "", alt: "", href: "" };
     case "button":
       return { id, type, label: "Read more", href: "https://", align: "left" };
     case "video":
       return { id, type, href: "https://www.youtube.com/watch?v=", thumbnail: "", label: "Watch the video" };
+    case "file":
+      return { id, type, url: "", label: "Download the file" };
     case "divider":
       return { id, type };
     case "spacer":
@@ -56,7 +59,7 @@ export function defaultCampaign(): { meta: CampaignMeta; blocks: Block[] } {
     },
     blocks: [
       { id: "h", type: "heading", text: "This month at The Thinking Room", align: "left" },
-      { id: "t", type: "text", text: "Hello {{firstName}},\n\nHere's what's new." },
+      { id: "t", type: "text", html: "<p>Hello {{firstName}},</p><p>Here's what's new.</p>" },
     ],
   };
 }
@@ -67,15 +70,32 @@ function esc(v: string) {
   return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-/** Minimal inline formatting for text blocks: **bold**, [label](url), line breaks. */
-function formatInline(s: string, accent: string) {
-  let out = esc(s);
-  out = out.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  out = out.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
-    `<a href="$2" style="color:${accent};text-decoration:underline;">$1</a>`
-  );
-  return out.replace(/\n/g, "<br>");
+/**
+ * Clean rich-text HTML (from the WYSIWYG editor) for email: drop <script>,
+ * <style>, comments, and on*= handlers. The content is admin-authored, so this
+ * is about email-safety more than untrusted-input XSS. Runs on client + server.
+ */
+export function sanitizeRichHtml(html: string): string {
+  return (html || "")
+    .replace(/<\/?(script|style|iframe|object|embed|link|meta)[^>]*>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
+    .replace(/javascript:/gi, "");
+}
+
+/** Strip all tags to a plain-text approximation. */
+function stripTags(html: string): string {
+  return (html || "")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export function youTubeId(url: string): string | null {
@@ -104,7 +124,7 @@ function renderBlock(b: Block, t: Theme): string {
     case "heading":
       return `<tr><td style="padding:8px 32px 4px;"><h2 style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.25;color:${t.headingColor};text-align:${b.align};">${esc(b.text)}</h2></td></tr>`;
     case "text":
-      return `<tr><td style="padding:8px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:${t.text};">${formatInline(b.text, t.accent)}</td></tr>`;
+      return `<tr><td style="padding:8px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:${t.text};" class="rt">${sanitizeRichHtml(b.html)}</td></tr>`;
     case "image": {
       if (!b.src) return "";
       const img = `<img src="${esc(b.src)}" alt="${esc(b.alt)}" width="536" style="width:100%;max-width:536px;border-radius:8px;display:block;" />`;
@@ -123,6 +143,10 @@ function renderBlock(b: Block, t: Theme): string {
         ? `<a href="${esc(b.href)}" style="text-decoration:none;display:block;"><img src="${esc(thumb)}" alt="${esc(b.label)}" width="536" style="width:100%;max-width:536px;border-radius:8px;display:block;" /></a>`
         : "";
       return `<tr><td style="padding:12px 32px;">${thumbImg}<div style="text-align:center;padding-top:10px;"><a href="${esc(b.href)}" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:${t.accent};text-decoration:none;">▶ ${esc(b.label)}</a></div></td></tr>`;
+    }
+    case "file": {
+      if (!b.url) return "";
+      return `<tr><td style="padding:12px 32px;"><table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="border-radius:6px;border:1px solid ${t.border};background:${t.pageBg};"><a href="${esc(b.url)}" style="display:inline-block;padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:${t.accent};text-decoration:none;">⬇ ${esc(b.label)}</a></td></tr></table></td></tr>`;
     }
     case "divider":
       return `<tr><td style="padding:8px 32px;"><div style="border-top:1px solid ${t.border};"></div></td></tr>`;
@@ -166,8 +190,9 @@ export function renderCampaignText(blocks: Block[]): string {
   const lines: string[] = [];
   for (const b of blocks) {
     if (b.type === "heading") lines.push(b.text.toUpperCase(), "");
-    else if (b.type === "text") lines.push(b.text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)"), "");
-    else if (b.type === "button" || b.type === "video") lines.push(`${b.type === "video" ? "▶ " : ""}${"label" in b ? b.label : ""}: ${b.href}`, "");
+    else if (b.type === "text") lines.push(stripTags(b.html), "");
+    else if (b.type === "button" || b.type === "video") lines.push(`${b.type === "video" ? "▶ " : ""}${b.label}: ${b.href}`, "");
+    else if (b.type === "file" && b.url) lines.push(`⬇ ${b.label}: ${b.url}`, "");
     else if (b.type === "image" && b.href) lines.push(b.href, "");
     else if (b.type === "divider") lines.push("—", "");
   }
