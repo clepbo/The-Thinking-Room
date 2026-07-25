@@ -17,11 +17,35 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { subject?: string; html?: string; text?: string; audience?: Audience; scheduledAt?: string };
+  let body: {
+    subject?: string;
+    html?: string;
+    text?: string;
+    audience?: Audience;
+    scheduledAt?: string;
+    recipients?: Array<{ email?: string; name?: string }>;
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  // Optional explicit recipient list (de-duplicated, validated).
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let recipients: { email: string; name: string }[] | undefined;
+  if (Array.isArray(body.recipients) && body.recipients.length) {
+    const seen = new Set<string>();
+    recipients = [];
+    for (const r of body.recipients) {
+      const email = String(r?.email || "").trim().toLowerCase();
+      if (!EMAIL_RE.test(email) || seen.has(email)) continue;
+      seen.add(email);
+      recipients.push({ email, name: String(r?.name || "") });
+    }
+    if (recipients.length === 0) {
+      return NextResponse.json({ error: "No valid recipients selected." }, { status: 400 });
+    }
   }
 
   if (!body.subject?.trim()) return NextResponse.json({ error: "Add a subject line." }, { status: 400 });
@@ -38,6 +62,7 @@ export async function POST(request: Request) {
     bodyText: body.text || "",
     audience: (body.audience as Audience) || "all",
     scheduledAt: when.toISOString(),
+    recipients,
   });
   return res.ok
     ? NextResponse.json({ ok: true, id: res.id })

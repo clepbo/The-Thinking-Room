@@ -27,16 +27,19 @@ const TABLE = "scheduled_campaigns";
 const BATCH = 20; // recipients per batch
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Queue a campaign to send at `scheduledAt`. */
+/** Queue a campaign to send at `scheduledAt`. If `recipients` is provided, that
+ *  exact list is used; otherwise the worker snapshots the `audience` at send time. */
 export async function createScheduledCampaign(input: {
   subject: string;
   html: string;
   bodyText?: string;
   audience: Audience;
   scheduledAt: string;
+  recipients?: Recipient[];
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const db = getSupabase();
   if (!db) return { ok: false, error: "Supabase is not configured." };
+  const hasExplicit = Array.isArray(input.recipients) && input.recipients.length > 0;
   const { data, error } = await db
     .from(TABLE)
     .insert({
@@ -46,6 +49,8 @@ export async function createScheduledCampaign(input: {
       audience: input.audience,
       scheduled_at: input.scheduledAt,
       status: "scheduled",
+      recipients: hasExplicit ? input.recipients : null,
+      total: hasExplicit ? input.recipients!.length : 0,
     })
     .select("id")
     .single();
@@ -123,11 +128,14 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
     const c = due?.[0];
     if (!c) break;
 
-    // First pickup: snapshot recipients and flip to "sending".
+    // First pickup: flip to "sending". Keep an explicit recipient list if one
+    // was provided at schedule time; otherwise snapshot the audience now.
     let recipients: Recipient[] = c.recipients || [];
-    if (c.status === "scheduled" || !c.recipients) {
-      const rows = await fetchSheetRegistrants();
-      recipients = rows ? filterAudience(rows, c.audience) : [];
+    if (c.status === "scheduled") {
+      if (recipients.length === 0) {
+        const rows = await fetchSheetRegistrants();
+        recipients = rows ? filterAudience(rows, c.audience) : [];
+      }
       await db
         .from(TABLE)
         .update({

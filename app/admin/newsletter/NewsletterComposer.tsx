@@ -18,8 +18,15 @@ interface Recipient {
   email: string;
   name?: string;
 }
+interface Selectable {
+  email: string;
+  name: string;
+  source: "sheet" | "manual";
+  checked: boolean;
+}
 type Audience = "event" | "journal" | "all";
 const BATCH_SIZE = 12;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BLOCK_TYPES: Block["type"][] = ["heading", "text", "image", "button", "video", "file", "divider", "spacer"];
 const BLOCK_LABEL: Record<Block["type"], string> = {
   heading: "Heading",
@@ -41,7 +48,8 @@ export default function NewsletterComposer() {
   const [sampleName, setSampleName] = useState("Ada");
 
   const [audience, setAudience] = useState<Audience>("all");
-  const [recipients, setRecipients] = useState<Recipient[] | null>(null);
+  const [recipients, setRecipients] = useState<Selectable[]>([]);
+  const [manualInput, setManualInput] = useState("");
   const [loadingRecipients, setLoadingRecipients] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [testStatus, setTestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -95,18 +103,59 @@ export default function NewsletterComposer() {
     };
   }
 
+  const selected = recipients.filter((r) => r.checked).map((r) => ({ email: r.email, name: r.name }));
+
   async function loadRecipients() {
     setLoadingRecipients(true);
     setSendResult(null);
     setProgress(null);
     const { status, data } = await api({ dryRun: true, audience, resend: true });
     setLoadingRecipients(false);
-    if (status === 200) setRecipients(data.recipients as Recipient[]);
-    else {
-      setRecipients(null);
+    if (status !== 200) {
       setSendResult({ ok: false, msg: data.error || `Couldn't load recipients (${status}).` });
+      return;
     }
+    const sheet: Selectable[] = (data.recipients as Recipient[]).map((r) => ({
+      email: r.email.toLowerCase(),
+      name: r.name || "",
+      source: "sheet",
+      checked: true,
+    }));
+    // Replace sheet entries with the fresh pull; keep any manually-added ones
+    // that aren't already in the sheet.
+    setRecipients((prev) => {
+      const sheetEmails = new Set(sheet.map((s) => s.email));
+      const manual = prev.filter((r) => r.source === "manual" && !sheetEmails.has(r.email));
+      return [...sheet, ...manual];
+    });
   }
+
+  function addManual() {
+    const emails = manualInput
+      .split(/[\s,;]+/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => EMAIL_RE.test(e));
+    if (emails.length === 0) return;
+    setRecipients((prev) => {
+      const existing = new Set(prev.map((r) => r.email));
+      const add: Selectable[] = [];
+      for (const email of emails) {
+        if (!existing.has(email)) {
+          existing.add(email);
+          add.push({ email, name: "", source: "manual", checked: true });
+        }
+      }
+      return [...prev, ...add];
+    });
+    setManualInput("");
+  }
+
+  const toggle = (email: string) =>
+    setRecipients((prev) => prev.map((r) => (r.email === email ? { ...r, checked: !r.checked } : r)));
+  const setAllChecked = (checked: boolean) =>
+    setRecipients((prev) => prev.map((r) => ({ ...r, checked })));
+  const removeRecipient = (email: string) =>
+    setRecipients((prev) => prev.filter((r) => r.email !== email));
 
   async function sendTest() {
     if (!testEmail) return;
@@ -134,6 +183,13 @@ export default function NewsletterComposer() {
       setScheduleMsg({ ok: false, msg: "Pick a date and time." });
       return;
     }
+    // If you've curated a list (loaded and/or added emails), schedule to exactly
+    // those checked. Otherwise fall back to the whole selected audience.
+    const hasList = recipients.length > 0;
+    if (hasList && selected.length === 0) {
+      setScheduleMsg({ ok: false, msg: "Select at least one recipient (or clear the list to use the whole audience)." });
+      return;
+    }
     setScheduling(true);
     setScheduleMsg(null);
     const email = buildEmailPayload();
@@ -146,20 +202,26 @@ export default function NewsletterComposer() {
         text: email.text,
         audience,
         scheduledAt: new Date(scheduleAt).toISOString(),
+        recipients: hasList ? selected : undefined,
       }),
     });
     const data = await res.json().catch(() => ({}));
     setScheduling(false);
     setScheduleMsg(
       res.status === 200
-        ? { ok: true, msg: `Scheduled. It will send to your "${audience}" list at the chosen time. Manage it on the Dashboard.` }
+        ? {
+            ok: true,
+            msg: hasList
+              ? `Scheduled to ${selected.length} selected recipient(s). Manage it on the Dashboard.`
+              : `Scheduled to your "${audience}" list. Manage it on the Dashboard.`,
+          }
         : { ok: false, msg: data.error || `Failed (${res.status}).` }
     );
   }
 
   async function sendAll() {
-    if (!recipients) return;
-    const list = recipients;
+    const list = selected;
+    if (list.length === 0) return;
     const email = buildEmailPayload();
     setSending(true);
     setConfirmSend(false);
@@ -265,10 +327,10 @@ export default function NewsletterComposer() {
           {testStatus && <div className={`${styles.status} ${testStatus.ok ? styles.statusOk : styles.statusErr}`}>{testStatus.msg}</div>}
 
           <div className={styles.divider} />
-          <p className={styles.panelTitle}>Send to your list</p>
+          <p className={styles.panelTitle}>Recipients</p>
           <div className={styles.field} style={{ marginTop: 10 }}>
-            <label className={styles.label}>Who to email</label>
-            <select className={styles.input} value={audience} onChange={(e) => { setAudience(e.target.value as Audience); setRecipients(null); }}>
+            <label className={styles.label}>Pull from your list</label>
+            <select className={styles.input} value={audience} onChange={(e) => { setAudience(e.target.value as Audience); setRecipients((prev) => prev.filter((r) => r.source === "manual")); }}>
               <option value="all">Everyone — registrants + journal (de-duplicated)</option>
               <option value="event">Event registrants only</option>
               <option value="journal">Journal subscribers only</option>
@@ -276,15 +338,56 @@ export default function NewsletterComposer() {
           </div>
           <div className={styles.row} style={{ marginTop: 4 }}>
             <button className={styles.btn} onClick={loadRecipients} disabled={loadingRecipients}>
-              {loadingRecipients ? "Loading…" : "Load recipients"}
+              {loadingRecipients ? "Loading…" : "Load from sheet"}
             </button>
           </div>
+
+          <div className={styles.field} style={{ marginTop: 12 }}>
+            <label className={styles.label}>Add emails manually</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                className={styles.input}
+                style={{ flex: 1 }}
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addManual(); } }}
+                placeholder="name@email.com — comma, space or newline separated"
+              />
+              <button className={styles.btn} onClick={addManual} disabled={!manualInput.trim()}>Add</button>
+            </div>
+          </div>
+
+          {recipients.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: "#ac9f8c" }}>
+                  <b style={{ color: "#f4efe6" }}>{selected.length}</b> of {recipients.length} selected
+                </span>
+                <span style={{ display: "flex", gap: 6 }}>
+                  <button className={styles.lockBtn} style={{ padding: "5px 10px" }} onClick={() => setAllChecked(true)}>All</button>
+                  <button className={styles.lockBtn} style={{ padding: "5px 10px" }} onClick={() => setAllChecked(false)}>None</button>
+                </span>
+              </div>
+              <div className={styles.recipients} style={{ maxHeight: 260 }}>
+                {recipients.map((r) => (
+                  <div className={styles.recipientRow} key={r.email} style={{ alignItems: "center", gap: 10 }}>
+                    <input type="checkbox" checked={r.checked} onChange={() => toggle(r.email)} style={{ width: 15, height: 15, accentColor: "#dd2525" }} />
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: r.checked ? "#f4efe6" : "#8a8a8a" }}>
+                      {r.name ? `${r.name} · ` : ""}{r.email}
+                    </span>
+                    {r.source === "manual" && <span style={{ color: "#6d6353", fontSize: 11 }}>manual</span>}
+                    <button onClick={() => removeRecipient(r.email)} title="Remove" style={{ background: "none", border: 0, color: "#8a8a8a", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className={styles.divider} />
           <p className={styles.panelTitle}>Schedule for later</p>
           <p className={styles.panelHint} style={{ marginBottom: 10 }}>
-            Send automatically at a future time — no need to keep this open. Uses the
-            &ldquo;{audience}&rdquo; list selected above.
+            Send automatically at a future time — no need to keep this open. Goes to your{" "}
+            {recipients.length > 0 ? `${selected.length} selected recipient(s)` : `whole "${audience}" list`}.
           </p>
           <div className={styles.row}>
             <div className={styles.field}>
@@ -314,23 +417,26 @@ export default function NewsletterComposer() {
             </div>
           )}
 
-          {recipients && !progress && (
-            <>
-              <div className={`${styles.status} ${styles.statusInfo}`}>{recipients.length} recipient(s) will receive this email.</div>
+          {recipients.length > 0 && !progress && (
+            <div style={{ marginTop: 8 }}>
               {!confirmSend ? (
-                <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ marginTop: 12, width: "100%" }} onClick={() => setConfirmSend(true)} disabled={recipients.length === 0 || !meta.subject.trim()}>
-                  {meta.subject.trim() ? `Send to ${recipients.length} ${recipients.length === 1 ? "person" : "people"}` : "Add a subject line first"}
+                <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ width: "100%" }} onClick={() => setConfirmSend(true)} disabled={selected.length === 0 || !meta.subject.trim()}>
+                  {!meta.subject.trim()
+                    ? "Add a subject line first"
+                    : selected.length === 0
+                    ? "Select at least one recipient"
+                    : `Send now to ${selected.length} ${selected.length === 1 ? "person" : "people"}`}
                 </button>
               ) : (
                 <div className={styles.confirmBox}>
-                  <p>Email {recipients.length} {recipients.length === 1 ? "person" : "people"} now? This can&rsquo;t be undone.</p>
+                  <p>Email {selected.length} {selected.length === 1 ? "person" : "people"} now? This can&rsquo;t be undone.</p>
                   <div className={styles.row}>
                     <button className={`${styles.btn} ${styles.btnDanger}`} onClick={sendAll} disabled={sending}>{sending ? "Sending…" : "Yes, send now"}</button>
                     <button className={styles.btn} onClick={() => setConfirmSend(false)} disabled={sending}>Cancel</button>
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
           {sendResult && <div className={`${styles.status} ${sendResult.ok ? styles.statusOk : styles.statusErr}`}>{sendResult.msg}</div>}
         </div>
