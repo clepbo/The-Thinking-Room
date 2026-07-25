@@ -49,6 +49,9 @@ export default function NewsletterComposer() {
   const [confirmSend, setConfirmSend] = useState(false);
   const [progress, setProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleMsg, setScheduleMsg] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const api = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -119,6 +122,38 @@ export default function NewsletterComposer() {
       status === 200
         ? { ok: true, msg: `Test sent to ${testEmail}.` }
         : { ok: false, msg: data.error || `Failed (${status}).` }
+    );
+  }
+
+  async function scheduleSend() {
+    if (!meta.subject.trim()) {
+      setScheduleMsg({ ok: false, msg: "Add a subject line first." });
+      return;
+    }
+    if (!scheduleAt) {
+      setScheduleMsg({ ok: false, msg: "Pick a date and time." });
+      return;
+    }
+    setScheduling(true);
+    setScheduleMsg(null);
+    const email = buildEmailPayload();
+    const res = await fetch("/api/admin/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        audience,
+        scheduledAt: new Date(scheduleAt).toISOString(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setScheduling(false);
+    setScheduleMsg(
+      res.status === 200
+        ? { ok: true, msg: `Scheduled. It will send to your "${audience}" list at the chosen time. Manage it on the Dashboard.` }
+        : { ok: false, msg: data.error || `Failed (${res.status}).` }
     );
   }
 
@@ -239,9 +274,34 @@ export default function NewsletterComposer() {
               <option value="journal">Journal subscribers only</option>
             </select>
           </div>
-          <button className={styles.btn} onClick={loadRecipients} disabled={loadingRecipients}>
-            {loadingRecipients ? "Loading…" : "Load recipients"}
-          </button>
+          <div className={styles.row} style={{ marginTop: 4 }}>
+            <button className={styles.btn} onClick={loadRecipients} disabled={loadingRecipients}>
+              {loadingRecipients ? "Loading…" : "Load recipients"}
+            </button>
+          </div>
+
+          <div className={styles.divider} />
+          <p className={styles.panelTitle}>Schedule for later</p>
+          <p className={styles.panelHint} style={{ marginBottom: 10 }}>
+            Send automatically at a future time — no need to keep this open. Uses the
+            &ldquo;{audience}&rdquo; list selected above.
+          </p>
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <input
+                className={styles.input}
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+              />
+            </div>
+            <button className={styles.btn} onClick={scheduleSend} disabled={scheduling || !scheduleAt}>
+              {scheduling ? "Scheduling…" : "Schedule send"}
+            </button>
+          </div>
+          {scheduleMsg && (
+            <div className={`${styles.status} ${scheduleMsg.ok ? styles.statusOk : styles.statusErr}`}>{scheduleMsg.msg}</div>
+          )}
 
           {progress && (
             <div style={{ marginTop: 14 }}>

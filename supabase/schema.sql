@@ -62,7 +62,35 @@ alter table public.media enable row level security;
 -- Uploaded files live in a Storage bucket named "media". The upload route
 -- creates it automatically (public) on first use, so no manual step is needed.
 
+-- ------------------------------------------------- scheduled_campaigns (send)
+-- A newsletter queued to go out at a future time. A cron worker picks these up,
+-- snapshots the recipient list, and sends in batches across runs (tracking
+-- progress with `cursor`), so big lists never time out.
+create table if not exists public.scheduled_campaigns (
+  id           uuid primary key default gen_random_uuid(),
+  subject      text not null,
+  html         text not null,
+  body_text    text,
+  audience     text not null default 'all',   -- 'event' | 'journal' | 'all'
+  scheduled_at timestamptz not null,
+  status       text not null default 'scheduled'
+               check (status in ('scheduled', 'sending', 'sent', 'canceled', 'error')),
+  recipients   jsonb,          -- [{email,name}] snapshot, filled at send time
+  total        int not null default 0,
+  cursor       int not null default 0,   -- next recipient index to send
+  sent_count   int not null default 0,
+  failed_count int not null default 0,
+  last_error   text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  started_at   timestamptz,
+  completed_at timestamptz
+);
+create index if not exists sched_status_idx on public.scheduled_campaigns (status, scheduled_at);
+
+alter table public.scheduled_campaigns enable row level security;
+-- No public policies: managed server-side with the secret key.
+
 -- ============================================================================
---  (Coming next: scheduled_campaigns + email_events for scheduled sends and
---   open/click tracking. They'll be added here when we build those.)
+--  (Coming next: email_events for open/click tracking.)
 -- ============================================================================

@@ -11,6 +11,25 @@ interface Stats {
   events: { total: number; published: number; drafts: number } | null;
 }
 
+interface Campaign {
+  id: string;
+  subject: string;
+  audience: string;
+  scheduled_at: string;
+  status: string;
+  total: number;
+  sent_count: number;
+  failed_count: number;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  scheduled: "#e3ff66",
+  sending: "#ffcf6a",
+  sent: "#8fce6b",
+  canceled: "#b0a58c",
+  error: "#ff8a8a",
+};
+
 function Stat({ num, label, accent }: { num: number | string; label: string; accent?: boolean }) {
   return (
     <div className={styles.statCard}>
@@ -25,6 +44,18 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [runMsg, setRunMsg] = useState("");
+
+  const loadCampaigns = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/campaigns", { headers: { "x-admin-token": token } });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 200) setCampaigns(data.campaigns || []);
+    } catch {
+      /* ignore */
+    }
+  }, [token]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,11 +69,46 @@ export default function Dashboard() {
       setError("Couldn't reach the server.");
     }
     setLoading(false);
-  }, [token]);
+    loadCampaigns();
+  }, [token, loadCampaigns]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  async function cancelCampaign(id: string) {
+    if (!confirm("Cancel this scheduled send?")) return;
+    await fetch("/api/admin/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({ cancelId: id }),
+    });
+    loadCampaigns();
+  }
+
+  async function runDueNow() {
+    setRunMsg("Running…");
+    try {
+      const res = await fetch("/api/cron/send", { headers: { "x-admin-token": token } });
+      const data = await res.json().catch(() => ({}));
+      const sent = (data.results || []).reduce((n: number, r: { sent: number }) => n + (r.sent || 0), 0);
+      setRunMsg(res.status === 200 ? `Done — sent ${sent} in this run.` : data.error || `Failed (${res.status}).`);
+    } catch {
+      setRunMsg("Couldn't reach the server.");
+    }
+    loadCampaigns();
+  }
+
+  function fmt(iso: string) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(iso));
+  }
 
   return (
     <>
@@ -95,6 +161,48 @@ export default function Dashboard() {
             Connect Supabase (SUPABASE_URL + SUPABASE_SECRET_KEY) and run the schema to manage events.
           </p>
         )}
+      </div>
+
+      {/* Scheduled campaigns */}
+      <div className={styles.panel} style={{ marginBottom: 18 }}>
+        <div className={styles.previewBar}>
+          <p className={styles.panelTitle} style={{ margin: 0 }}>Scheduled &amp; recent campaigns</p>
+          <button className={styles.lockBtn} onClick={runDueNow}>Run due sends now</button>
+        </div>
+        {runMsg && <div className={`${styles.status} ${styles.statusInfo}`}>{runMsg}</div>}
+        {campaigns.length === 0 ? (
+          <p className={styles.panelHint}>
+            No campaigns yet. Compose one in <b>Newsletter</b> and use &ldquo;Schedule for later&rdquo;.
+          </p>
+        ) : (
+          <div className={styles.recipients} style={{ maxHeight: "unset", marginTop: 12 }}>
+            {campaigns.map((c) => (
+              <div className={styles.recipientRow} key={c.id} style={{ alignItems: "center" }}>
+                <span style={{ flex: 1 }}>
+                  {c.subject || "(no subject)"}
+                  <br />
+                  <span style={{ color: "#6d6353", fontSize: 12 }}>
+                    {fmt(c.scheduled_at)} · {c.audience}
+                    {c.status === "sending" || c.status === "sent" ? ` · ${c.sent_count}/${c.total} sent` : ""}
+                  </span>
+                </span>
+                <span style={{ color: STATUS_COLOR[c.status] || "#ac9f8c", fontWeight: 600, marginRight: 12 }}>
+                  {c.status}
+                </span>
+                {(c.status === "scheduled" || c.status === "sending") && (
+                  <button className={styles.lockBtn} style={{ padding: "5px 10px" }} onClick={() => cancelCampaign(c.id)}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <p className={styles.panelHint} style={{ marginTop: 12 }}>
+          Scheduled emails send via a cron worker. On Vercel <b>Pro</b>, add a 5-minute cron for{" "}
+          <code>/api/cron/send</code>; on <b>Hobby</b> (daily cron only), point a free pinger
+          (e.g. cron-job.org) at it every few minutes, or use &ldquo;Run due sends now&rdquo;.
+        </p>
       </div>
 
       {/* Tracking — next */}

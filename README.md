@@ -412,6 +412,30 @@ Optional env vars:
 (Server-proxied uploads are capped at ~4 MB per file; larger-file support via
 direct-to-storage can be added later.)
 
+### Scheduling a newsletter for later
+
+In the composer, pick a date/time under **"Schedule for later"** and click
+**Schedule send**. The campaign is saved to Supabase and sent automatically by a
+cron worker — you don't need to keep the page open. It sends in batches across
+runs, so big lists never time out. Manage scheduled/sending/sent campaigns
+(with **Cancel**) on the **Dashboard**.
+
+The worker is `GET /api/cron/send`. How you trigger it depends on your Vercel plan:
+
+- **Vercel Pro/Enterprise** — add a 5-minute cron to `vercel.json`:
+  ```json
+  { "path": "/api/cron/send", "schedule": "*/5 * * * *" }
+  ```
+  (Not added by default because Hobby rejects sub-daily crons at deploy time.)
+- **Vercel Hobby** (cron is once-per-day only) — point a free external scheduler
+  such as **cron-job.org** at
+  `https://YOUR-SITE/api/cron/send` every few minutes, sending the header
+  `Authorization: Bearer <CRON_SECRET>`.
+- **Any plan** — the Dashboard's **"Run due sends now"** button triggers it
+  manually (good for testing, or a quick nudge).
+
+Set a **`CRON_SECRET`** env var so only your scheduler can trigger sends.
+
 ### Sending in batches (why the 504 happened, and the fix)
 
 Both consoles now send in **batches of ~12 per request** straight from your
