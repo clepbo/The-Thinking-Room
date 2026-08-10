@@ -91,6 +91,34 @@ create index if not exists sched_status_idx on public.scheduled_campaigns (statu
 alter table public.scheduled_campaigns enable row level security;
 -- No public policies: managed server-side with the secret key.
 
--- ============================================================================
---  (Coming next: email_events for open/click tracking.)
--- ============================================================================
+-- Extra tracking columns on campaigns (safe to run repeatedly).
+alter table public.scheduled_campaigns add column if not exists failures jsonb not null default '[]'::jsonb;
+alter table public.scheduled_campaigns add column if not exists opened_count int not null default 0;
+alter table public.scheduled_campaigns add column if not exists clicked_count int not null default 0;
+
+-- ------------------------------------------------- email_events (open/click)
+-- One row per (campaign, recipient, type) — so opened_count / clicked_count are
+-- UNIQUE opens/clickers, not raw pixel loads. Written by /api/track/*.
+create table if not exists public.email_events (
+  id          uuid primary key default gen_random_uuid(),
+  campaign_id uuid references public.scheduled_campaigns(id) on delete cascade,
+  email       text not null,
+  type        text not null check (type in ('open', 'click')),
+  url         text,
+  created_at  timestamptz not null default now(),
+  unique (campaign_id, email, type)
+);
+create index if not exists email_events_campaign_idx on public.email_events (campaign_id, type);
+alter table public.email_events enable row level security;
+
+-- Atomic counter bump used by the tracking routes.
+create or replace function public.bump_campaign(cid uuid, col text)
+returns void language plpgsql security definer as $$
+begin
+  if col = 'opened' then
+    update public.scheduled_campaigns set opened_count = opened_count + 1 where id = cid;
+  elsif col = 'clicked' then
+    update public.scheduled_campaigns set clicked_count = clicked_count + 1 where id = cid;
+  end if;
+end;
+$$;

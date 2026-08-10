@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listCampaigns, cancelCampaign } from "../../../lib/campaigns";
+import { listCampaigns, cancelCampaign, getCampaignDetail } from "../../../lib/campaigns";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 
 export const runtime = "nodejs";
@@ -19,6 +19,10 @@ function guard(request: Request): NextResponse | null {
 export async function GET(request: Request) {
   const blocked = guard(request);
   if (blocked) return blocked;
+  const id = new URL(request.url).searchParams.get("id");
+  if (id) {
+    return NextResponse.json({ ok: true, campaign: await getCampaignDetail(id) });
+  }
   return NextResponse.json({ ok: true, campaigns: await listCampaigns(), supabase: true });
 }
 

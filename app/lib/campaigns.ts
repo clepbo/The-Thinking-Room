@@ -20,12 +20,55 @@ export interface CampaignSummary {
   total: number;
   sent_count: number;
   failed_count: number;
+  opened_count: number;
+  clicked_count: number;
   created_at: string;
 }
 
 const TABLE = "scheduled_campaigns";
 const BATCH = 20; // recipients per batch
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Absolute site URL for tracking links/pixels (needed since the worker has no request). */
+function siteBase(): string {
+  const raw =
+    process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "");
+  return raw.replace(/\/$/, "");
+}
+
+/** Add a tracking pixel + rewrite http links to go through the click tracker. */
+function injectTracking(html: string, campaignId: string, email: string): string {
+  const base = siteBase();
+  if (!base) return html; // tracking off until SITE_URL is set
+  const e = encodeURIComponent(email);
+  let out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (_m, url: string) => {
+    return `href="${base}/api/track/click?c=${campaignId}&e=${e}&u=${encodeURIComponent(url)}"`;
+  });
+  const pixel = `<img src="${base}/api/track/open?c=${campaignId}&e=${e}" width="1" height="1" alt="" style="display:block;border:0;max-height:0;overflow:hidden" />`;
+  out = out.includes("</body>") ? out.replace("</body>", `${pixel}</body>`) : out + pixel;
+  return out;
+}
+
+/** Record a unique open/click event and bump the campaign counter. */
+export async function recordEvent(
+  campaignId: string,
+  email: string,
+  type: "open" | "click",
+  url?: string
+): Promise<void> {
+  const db = getSupabase();
+  if (!db || !campaignId || !email) return;
+  const { error } = await db
+    .from("email_events")
+    .insert({ campaign_id: campaignId, email: email.toLowerCase(), type, url: url || null });
+  if (error) {
+    if (error.code === "23505") return; // already counted (unique)
+    console.error("[track] insert failed:", error.message);
+    return;
+  }
+  await db.rpc("bump_campaign", { cid: campaignId, col: type === "open" ? "opened" : "clicked" });
+}
 
 /** Queue a campaign to send at `scheduledAt`. If `recipients` is provided, that
  *  exact list is used; otherwise the worker snapshots the `audience` at send time. */
@@ -64,7 +107,7 @@ export async function listCampaigns(): Promise<CampaignSummary[]> {
   if (!db) return [];
   const { data, error } = await db
     .from(TABLE)
-    .select("id, subject, audience, scheduled_at, status, total, sent_count, failed_count, created_at")
+    .select("id, subject, audience, scheduled_at, status, total, sent_count, failed_count, opened_count, clicked_count, created_at")
     .order("scheduled_at", { ascending: false })
     .limit(50);
   if (error) {
@@ -72,6 +115,19 @@ export async function listCampaigns(): Promise<CampaignSummary[]> {
     return [];
   }
   return (data as CampaignSummary[]) || [];
+}
+
+/** Full campaign incl. the list of failed recipients (for the dashboard). */
+export async function getCampaignDetail(id: string): Promise<{
+  id: string;
+  subject: string;
+  failures: { email: string; error: string }[];
+} | null> {
+  const db = getSupabase();
+  if (!db) return null;
+  const { data, error } = await db.from(TABLE).select("id, subject, failures").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return { id: data.id, subject: data.subject, failures: Array.isArray(data.failures) ? data.failures : [] };
 }
 
 export async function cancelCampaign(id: string): Promise<{ ok: boolean; error?: string }> {
@@ -161,6 +217,7 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
     let cursor = c.cursor || 0;
     let sent = c.sent_count || 0;
     let failed = c.failed_count || 0;
+    const failures: { email: string; error: string }[] = Array.isArray(c.failures) ? c.failures : [];
 
     while (cursor < recipients.length && Date.now() - start < budgetMs) {
       const batch = recipients.slice(cursor, cursor + BATCH);
@@ -170,20 +227,21 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
             from: `"The Thinking Room" <${process.env.GMAIL_USER}>`,
             to: r.email,
             subject: personalize(c.subject, r),
-            html: personalize(c.html, r),
+            html: injectTracking(personalize(c.html, r), c.id, r.email),
             text: personalize(c.body_text || "", r),
           });
           sent++;
-        } catch {
+        } catch (err) {
           failed++;
+          failures.push({ email: r.email, error: String(err instanceof Error ? err.message : err).slice(0, 300) });
         }
       }
       cursor += batch.length;
-      await db.from(TABLE).update({ cursor, sent_count: sent, failed_count: failed, updated_at: new Date().toISOString() }).eq("id", c.id);
+      await db.from(TABLE).update({ cursor, sent_count: sent, failed_count: failed, failures, updated_at: new Date().toISOString() }).eq("id", c.id);
     }
 
     if (cursor >= recipients.length) {
-      await db.from(TABLE).update({ status: "sent", cursor, sent_count: sent, failed_count: failed, completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", c.id);
+      await db.from(TABLE).update({ status: "sent", cursor, sent_count: sent, failed_count: failed, failures, completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", c.id);
       results.push({ id: c.id, sent, failed, done: true });
     } else {
       results.push({ id: c.id, sent, failed, done: false });

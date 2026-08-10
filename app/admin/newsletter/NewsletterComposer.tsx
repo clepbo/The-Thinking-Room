@@ -25,7 +25,6 @@ interface Selectable {
   checked: boolean;
 }
 type Audience = "event" | "journal" | "all";
-const BATCH_SIZE = 12;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BLOCK_TYPES: Block["type"][] = ["heading", "text", "image", "button", "video", "file", "divider", "spacer"];
 const BLOCK_LABEL: Record<Block["type"], string> = {
@@ -219,32 +218,65 @@ export default function NewsletterComposer() {
     );
   }
 
-  async function sendAll() {
+  // Send now = create a campaign dated now, then drive the worker to completion
+  // (polling progress). This routes immediate sends through the same tracked
+  // path as scheduled ones, so opens/clicks/failures show on the Dashboard.
+  async function sendNow() {
     const list = selected;
     if (list.length === 0) return;
     const email = buildEmailPayload();
     setSending(true);
     setConfirmSend(false);
     setSendResult(null);
-    let sent = 0;
-    let failed = 0;
     setProgress({ sent: 0, failed: 0, total: list.length });
-    for (let i = 0; i < list.length; i += BATCH_SIZE) {
-      const batch = list.slice(i, i + BATCH_SIZE);
-      try {
-        const { status, data } = await api({ recipients: batch, email });
-        if (status === 200) {
-          sent += (data.sent as number) || 0;
-          failed += (data.failed as number) || 0;
-        } else failed += batch.length;
-      } catch {
-        failed += batch.length;
+
+    const createRes = await fetch("/api/admin/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        audience,
+        scheduledAt: new Date().toISOString(),
+        recipients: list,
+      }),
+    });
+    const created = await createRes.json().catch(() => ({}));
+    if (createRes.status !== 200) {
+      setSending(false);
+      setSendResult({ ok: false, msg: created.error || `Couldn't start send (${createRes.status}).` });
+      return;
+    }
+    const id = created.id as string;
+
+    // Drive the worker + poll until this campaign is done.
+    for (let i = 0; i < 80; i++) {
+      const run = await fetch("/api/cron/send", { headers: { "x-admin-token": token } });
+      const rd = await run.json().catch(() => ({}));
+      if (rd.ran === false && rd.error) {
+        setSending(false);
+        setSendResult({ ok: false, msg: rd.error });
+        return;
       }
-      setProgress({ sent, failed, total: list.length });
-      if (i + BATCH_SIZE < list.length) await new Promise((r) => setTimeout(r, 400));
+      const cs = await fetch("/api/admin/campaigns", { headers: { "x-admin-token": token } });
+      const cd = await cs.json().catch(() => ({}));
+      const c = (cd.campaigns || []).find((x: { id: string }) => x.id === id);
+      if (c) {
+        setProgress({ sent: c.sent_count, failed: c.failed_count, total: c.total || list.length });
+        if (["sent", "error", "canceled"].includes(c.status)) {
+          setSending(false);
+          setSendResult({
+            ok: c.failed_count === 0,
+            msg: `Delivered ${c.sent_count} of ${c.total}${c.failed_count ? ` · ${c.failed_count} failed` : ""}. Opens & clicks appear on the Dashboard.`,
+          });
+          return;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 1500));
     }
     setSending(false);
-    setSendResult({ ok: failed === 0, msg: `Delivered ${sent} of ${list.length}${failed ? ` · ${failed} failed` : ". All done."}` });
+    setSendResult({ ok: true, msg: "Still sending — check the Dashboard for progress." });
   }
 
   // ------------------------------------------------------------------- composer
@@ -431,7 +463,7 @@ export default function NewsletterComposer() {
                 <div className={styles.confirmBox}>
                   <p>Email {selected.length} {selected.length === 1 ? "person" : "people"} now? This can&rsquo;t be undone.</p>
                   <div className={styles.row}>
-                    <button className={`${styles.btn} ${styles.btnDanger}`} onClick={sendAll} disabled={sending}>{sending ? "Sending…" : "Yes, send now"}</button>
+                    <button className={`${styles.btn} ${styles.btnDanger}`} onClick={sendNow} disabled={sending}>{sending ? "Sending…" : "Yes, send now"}</button>
                     <button className={styles.btn} onClick={() => setConfirmSend(false)} disabled={sending}>Cancel</button>
                   </div>
                 </div>

@@ -488,14 +488,38 @@ All admin tools live behind one login now. Enter your `ADMIN_TOKEN` **once** at
 - **Reminders** — the reminder console (edit, preview, batched send).
 - **Newsletter** — the block-based newsletter/digest composer.
 - **Events CMS** — create/publish events to `/events`.
-- **Dashboard** — audience numbers (from the Google Sheet), event counts (from
-  Supabase), and where email/site tracking is headed. Site visits/page views are
-  in **Vercel → Analytics**.
+- **Dashboard** — a charted overview: audience donut, per-campaign open/click
+  rates, KPI tiles, and a campaigns table with a **Failures** expander that lists
+  the exact addresses that bounced and why. Site visits/page views are in
+  **Vercel → Analytics**.
 
-### Still to come (next Supabase steps)
+### Email open & click tracking
 
-- **Email open/click tracking** per campaign (tracking pixel + redirect links
-  logged to Supabase), surfaced on the Dashboard.
+Every campaign send (immediate or scheduled) is tracked:
+
+- **Opens** — a 1×1 pixel (`/api/track/open`) logs a unique open per recipient.
+- **Clicks** — links are rewritten through `/api/track/click`, which logs the
+  click then redirects to the real URL.
+- **Failed sends** — when Gmail rejects a recipient (bad address, bounce, etc.),
+  the address + reason are stored on the campaign and shown under **Failures** on
+  the Dashboard — so you see them there, not only in Gmail's bounce email.
+
+Tracking needs the site's own URL so the pixel/links are absolute. Add one env
+var (and re-run `supabase/schema.sql`, which adds the `email_events` table and
+tracking columns):
+
+| Name        | Value                                             |
+| ----------- | ------------------------------------------------- |
+| `SITE_URL`  | your deployed URL, e.g. `https://your-site.vercel.app` |
+
+Without `SITE_URL`, emails still send fine — they just go out untracked.
+
+> **Note on opens:** open rates are approximate. Apple Mail Privacy Protection
+> preloads images (inflating opens) and other clients block images (undercounting).
+> Click rates are the more reliable signal.
+
+### Still to come
+
 - **Saved audiences & an unsubscribe list** stored in the database.
 
 ---
