@@ -111,6 +111,14 @@ create table if not exists public.email_events (
 create index if not exists email_events_campaign_idx on public.email_events (campaign_id, type);
 alter table public.email_events enable row level security;
 
+-- ------------------------------------------------------- unsubscribes
+-- Emails that opted out. They're filtered out of every send.
+create table if not exists public.unsubscribes (
+  email      text primary key,
+  created_at timestamptz not null default now()
+);
+alter table public.unsubscribes enable row level security;
+
 -- Atomic counter bump used by the tracking routes.
 create or replace function public.bump_campaign(cid uuid, col text)
 returns void language plpgsql security definer as $$

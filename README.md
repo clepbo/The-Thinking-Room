@@ -518,9 +518,39 @@ Without `SITE_URL`, emails still send fine — they just go out untracked.
 > preloads images (inflating opens) and other clients block images (undercounting).
 > Click rates are the more reliable signal.
 
+### Unsubscribe (one-click opt-out)
+
+Every newsletter footer has an **Unsubscribe** link. It points at
+`/unsubscribe?e=<their-email>` (filled in per-recipient at send time). That page
+shows a confirmation card; clicking **Yes, unsubscribe** POSTs to
+`/api/unsubscribe`, which stores the address in the `unsubscribes` table.
+
+Anyone on that list is then **automatically filtered out of every send** — the
+scheduled-campaign worker, the reminder console, and "Load from sheet" all skip
+opted-out addresses. Re-run `supabase/schema.sql` once to add the `unsubscribes`
+table.
+
+Two safety choices worth knowing:
+
+- The link opens a **confirm page** rather than unsubscribing on click, so email
+  security scanners / link prefetchers (which fire GET requests) can't
+  accidentally opt someone out. Only the button (a POST) does it.
+- The unsubscribe and tracking links are **excluded** from click-tracking
+  rewrites, so they always work and aren't logged as content clicks.
+
+If `SITE_URL` isn't set yet, the footer link falls back to a
+`mailto:` unsubscribe request instead of the one-click page.
+
+### Registration → WhatsApp
+
+After someone registers, the success screen shows "Registration successful!" and
+**auto-opens the WhatsApp group** after a short beat. If the browser blocks or
+delays the redirect, a visible **Join the WhatsApp group** button is the
+fallback. The group link lives in `app/content.ts` under `register.whatsappUrl`.
+
 ### Still to come
 
-- **Saved audiences & an unsubscribe list** stored in the database.
+- **Saved audiences** stored in the database.
 
 ---
 

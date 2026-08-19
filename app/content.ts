@@ -35,12 +35,12 @@ export const site = {
   // -------------------------------------------------------------------------
   hero: {
     eyebrow: "Current Conversation",
-    edition: "Edition 001",
-    // The headline is split so the second half can be highlighted in gold.
-    titleTop: "Too Much to Choose.",
-    titleBottom: "Too Little to Show.",
+    edition: "Episode 3",
+    // The headline is split so the second half can be highlighted.
+    titleTop: "Living Your Life",
+    titleBottom: "By Design.",
     description:
-      "A thought-provoking conversation exploring why unlimited access to information and opportunities has made many intelligent people less decisive, more distracted, and increasingly stagnant — and how to reclaim clarity, commitment, and meaningful progress.",
+      "A live conversation with The Austin Adetunji on refusing to drift — designing your life on purpose instead of living by default. Come ready to rethink how you choose, commit, and build a life that's truly yours.",
     primaryCta: "Reserve Your Seat",
     secondaryCta: "Learn More",
   },
@@ -113,9 +113,9 @@ export const site = {
   // EVENT DETAILS BAR  ← change the date / time / platform here
   // -------------------------------------------------------------------------
   details: [
-    { icon: "calendar", label: "Date", value: "Thursday, July 23, 2026" },
-    { icon: "clock", label: "Time", value: "7:00 PM (WAT)" },
-    { icon: "monitor", label: "Platform", value: "Zoom" },
+    { icon: "calendar", label: "Date", value: "Friday, August 21, 2026" },
+    { icon: "clock", label: "Time", value: "8:00 PM (WAT)" },
+    { icon: "monitor", label: "Platform", value: "Virtual (Zoom)" },
    // { icon: "timer", label: "Duration", value: "2 Hours" },
     { icon: "ticket", label: "Investment", value: "Free (Registration Required)" },
   ],
@@ -127,7 +127,7 @@ export const site = {
   // UTC+1 — adjust the offset if you ever move the event to another zone).
   // -------------------------------------------------------------------------
   event: {
-    startISO: "2026-07-23T19:00:00+01:00",
+    startISO: "2026-08-21T20:00:00+01:00",
     durationMinutes: 120,
   },
 
@@ -141,6 +141,11 @@ export const site = {
       "Seats are limited. Register below and we'll send you the Zoom link and a reminder before the session begins.",
     successMessage:
       "You're in. Check your inbox for confirmation and the session link.",
+    // After registering, people are shown this and redirected to the WhatsApp
+    // group. Change the link here when the group changes.
+    whatsappUrl: "https://chat.whatsapp.com/Csgf4kCe35RBkSPssCnP5v?mode=gi_t",
+    whatsappMessage:
+      "Registration successful! You'll now be redirected to join our WhatsApp group…",
   },
 
   // -------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabase";
 import { getTransporter, personalize, type Recipient } from "./eventEmail";
 import { fetchSheetRegistrants } from "./sheet";
+import { getUnsubscribedSet } from "./unsubscribe";
 
 /**
  * Scheduled newsletter campaigns. A campaign is composed in the newsletter tab
@@ -37,12 +38,20 @@ function siteBase(): string {
   return raw.replace(/\/$/, "");
 }
 
-/** Add a tracking pixel + rewrite http links to go through the click tracker. */
+/**
+ * Fill the {{unsubscribeUrl}} placeholder, add a tracking pixel, and rewrite
+ * http links through the click tracker (skipping the unsubscribe + track links).
+ */
 function injectTracking(html: string, campaignId: string, email: string): string {
   const base = siteBase();
-  if (!base) return html; // tracking off until SITE_URL is set
   const e = encodeURIComponent(email);
-  let out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (_m, url: string) => {
+  const unsub = base ? `${base}/unsubscribe?e=${e}` : "mailto:hello@thethinkingroom.co?subject=Unsubscribe";
+  let out = html.replace(/\{\{\s*unsubscribeUrl\s*\}\}/gi, unsub);
+
+  if (!base) return out; // no tracking until SITE_URL is set (unsubscribe still filled)
+
+  out = out.replace(/href="(https?:\/\/[^"]+)"/gi, (_m, url: string) => {
+    if (url.includes("/unsubscribe") || url.includes("/api/track")) return `href="${url}"`;
     return `href="${base}/api/track/click?c=${campaignId}&e=${e}&u=${encodeURIComponent(url)}"`;
   });
   const pixel = `<img src="${base}/api/track/open?c=${campaignId}&e=${e}" width="1" height="1" alt="" style="display:block;border:0;max-height:0;overflow:hidden" />`;
@@ -192,6 +201,9 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
         const rows = await fetchSheetRegistrants();
         recipients = rows ? filterAudience(rows, c.audience) : [];
       }
+      // Never email anyone who has unsubscribed.
+      const unsub = await getUnsubscribedSet();
+      if (unsub.size) recipients = recipients.filter((r) => !unsub.has(r.email.toLowerCase()));
       await db
         .from(TABLE)
         .update({

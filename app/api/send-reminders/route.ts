@@ -7,6 +7,7 @@ import {
   type Recipient,
   type ReminderContent,
 } from "../../lib/eventEmail";
+import { getUnsubscribedSet } from "../../lib/unsubscribe";
 
 /**
  * ============================================================================
@@ -149,7 +150,9 @@ async function fetchRecipientsFromSheet(resend: boolean, audience: Audience): Pr
     seen.add(email);
     out.push({ email, name: String(r.name || "") });
   }
-  return out;
+  // Never email anyone who has opted out.
+  const unsub = await getUnsubscribedSet();
+  return unsub.size ? out.filter((r) => !unsub.has(r.email.toLowerCase())) : out;
 }
 
 /** Ask the sheet to stamp these emails as reminded (best-effort). */

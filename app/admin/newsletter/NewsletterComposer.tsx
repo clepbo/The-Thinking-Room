@@ -76,7 +76,10 @@ export default function NewsletterComposer() {
   // ----- live preview (rendered client-side, {{firstName}} filled for realism)
   const previewHtml = useMemo(() => {
     const html = renderCampaignHtml(blocks, meta);
-    return html.replace(/\{\{\s*firstName\s*\}\}/gi, sampleName || "there").replace(/\{\{\s*name\s*\}\}/gi, sampleName || "there");
+    return html
+      .replace(/\{\{\s*firstName\s*\}\}/gi, sampleName || "there")
+      .replace(/\{\{\s*name\s*\}\}/gi, sampleName || "there")
+      .replace(/\{\{\s*unsubscribeUrl\s*\}\}/gi, "#"); // filled per-recipient at send time
   }, [blocks, meta, sampleName]);
 
   // ----- block editing helpers

@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { site } from "../app/content";
 
 type Status = "idle" | "loading" | "success" | "error";
 
+const WHATSAPP_URL = site.register.whatsappUrl;
+
 export default function RegisterForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+
+  // On success, auto-open the WhatsApp group after a short beat. The visible
+  // button below is the fallback if the browser blocks or delays the redirect.
+  useEffect(() => {
+    if (status !== "success" || !WHATSAPP_URL) return;
+    const t = setTimeout(() => {
+      window.location.href = WHATSAPP_URL;
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [status]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,8 +51,18 @@ export default function RegisterForm() {
 
   if (status === "success") {
     return (
-      <div className="form-status success" role="status">
-        {message}
+      <div className="register-success" role="status">
+        <div className="register-success-check" aria-hidden>✓</div>
+        <h3>Registration successful!</h3>
+        <p>{site.register.whatsappMessage}</p>
+        <a className="btn btn-primary" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+          Join the WhatsApp group
+        </a>
+        <p className="register-success-note">
+          Not redirected automatically? Tap the button above to join.
+          <br />
+          We&rsquo;ve also emailed your confirmation and the session link.
+        </p>
       </div>
     );
   }

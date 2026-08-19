@@ -177,7 +177,7 @@ export function renderCampaignHtml(blocks: Block[], meta: CampaignMeta): string 
         <tr><td style="height:16px;font-size:0;">&nbsp;</td></tr>
         <tr><td style="padding:20px 32px;border-top:1px solid ${t.border};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${t.muted};">
           ${esc(meta.footerNote)}<br>
-          <a href="mailto:${esc(meta.unsubscribeEmail)}?subject=Unsubscribe" style="color:${t.muted};text-decoration:underline;">Unsubscribe</a>
+          <a href="{{unsubscribeUrl}}" style="color:${t.muted};text-decoration:underline;">Unsubscribe</a>
         </td></tr>
       </table>
     </td></tr>
