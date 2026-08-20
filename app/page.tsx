@@ -169,6 +169,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================================================= COMMUNITY */}
+      <section id="community" className="section community">
+        <div className="container">
+          <Reveal className="community-card">
+            <span className="community-badge">
+              <Icon name="whatsapp" className="community-badge-icon" />
+            </span>
+            <span className="eyebrow">{site.community.eyebrow}</span>
+            <h2>{site.community.heading}</h2>
+            <p className="lead">{site.community.description}</p>
+            <a
+              className="btn community-btn"
+              href={site.register.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {site.community.cta}
+            </a>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ================================================= JOURNAL */}
       <section id="journal" className="section journal">
         <div className="container journal-grid">

@@ -31,15 +31,12 @@ import { site } from "../../content";
  *  see `sendConfirmationEmail` below. It reuses GMAIL_USER / GMAIL_APP_PASSWORD,
  *  reads the date/time straight from app/content.ts (`site.event.startISO`)
  *  so it's always in sync with what's on the page, and attaches a calendar
- *  invite (.ics) plus an "Add to Google Calendar" link. The Zoom details
- *  come from these env vars (kept out of content.ts on purpose — that file
- *  ships to the browser, so real meeting details there would be visible to
- *  anyone before they register):
+ *  invite (.ics) plus an "Add to Google Calendar" link. It also points people
+ *  to the WhatsApp community (site.register.whatsappUrl).
  *
- *    ZOOM_LINK          the meeting URL
- *    ZOOM_MEETING_ID    optional — auto-parsed from ZOOM_LINK if omitted
- *    ZOOM_PASSCODE      optional — Zoom doesn't expose this in the URL, so
- *                       it has to be set by hand
+ *  The confirmation email deliberately does NOT include the Zoom join link —
+ *  that can change before the event, so the correct link is sent later in a
+ *  reminder email (see app/api/send-reminders, which reads the ZOOM_* env vars).
  *
  *  Setup steps are in the README.
  *
@@ -213,16 +210,6 @@ function formatUtcStamp(date: Date) {
   return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 }
 
-/** Pulls "818 8668 7384" out of a Zoom join URL like .../j/81886687384?pwd=... */
-function extractMeetingId(link: string) {
-  const match = link.match(/\/j\/(\d+)/);
-  if (!match) return null;
-  const id = match[1];
-  if (id.length === 11) return `${id.slice(0, 3)} ${id.slice(3, 7)} ${id.slice(7)}`;
-  if (id.length === 10) return `${id.slice(0, 3)} ${id.slice(3, 6)} ${id.slice(6)}`;
-  return id;
-}
-
 function escapeIcsText(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
 }
@@ -288,11 +275,12 @@ function googleCalendarLink({
 }
 
 /**
- * Auto-reply to the person who just registered: confirms their seat, hands
- * them the Zoom link/Meeting ID/Passcode, and gives them a one-click way to
- * add the session to their calendar (a Google Calendar link plus an
- * attached .ics file for everyone else). Fires only for the "Reserve Your
- * Seat" form (not the Journal signup — that's a newsletter, not an RSVP).
+ * Auto-reply to the person who just registered: confirms their seat, invites
+ * them to the WhatsApp community, and gives them a one-click way to add the
+ * session to their calendar (a Google Calendar link plus an attached .ics file
+ * for everyone else). The join link is sent later in a reminder — not here —
+ * since it can change. Fires only for the "Reserve Your Seat" form (not the
+ * Journal signup — that's a newsletter, not an RSVP).
  * Uses the same Gmail SMTP credentials as the owner notification above, so
  * no extra setup beyond what's already in the README.
  */
@@ -311,46 +299,20 @@ async function sendConfirmationEmail(record: Record<string, string>) {
   const eventTime = formatEventTime(start);
   const eventTitle = `${site.brand.name} — ${site.hero.edition}`;
 
-  const zoomLink = process.env.ZOOM_LINK;
-  const meetingId = process.env.ZOOM_MEETING_ID || (zoomLink ? extractMeetingId(zoomLink) : null);
-  const passcode = process.env.ZOOM_PASSCODE;
   const firstName = escapeHtml((record.name || "").trim().split(/\s+/)[0] || "there");
+  const whatsappUrl = site.register.whatsappUrl;
 
-  const meetingRows = zoomLink
-    ? `<tr>
-         <td style="padding:10px 0;color:#8a8a8a;font-size:13px;letter-spacing:.08em;text-transform:uppercase;vertical-align:top;">Join Using</td>
-         <td style="padding:10px 0;"><a href="${escapeHtml(zoomLink)}" style="color:#dd2525;font-weight:700;word-break:break-all;">${escapeHtml(zoomLink)}</a></td>
-       </tr>
-       ${
-         meetingId
-           ? `<tr>
-                <td style="padding:10px 0;color:#8a8a8a;font-size:13px;letter-spacing:.08em;text-transform:uppercase;">Meeting ID</td>
-                <td style="padding:10px 0;color:#f4efe6;font-size:15px;font-weight:700;">${escapeHtml(meetingId)}</td>
-              </tr>`
-           : ""
-       }
-       ${
-         passcode
-           ? `<tr>
-                <td style="padding:10px 0;color:#8a8a8a;font-size:13px;letter-spacing:.08em;text-transform:uppercase;">Passcode</td>
-                <td style="padding:10px 0;color:#f4efe6;font-size:15px;font-weight:700;">${escapeHtml(passcode)}</td>
-              </tr>`
-           : ""
-       }`
-    : `<tr>
-         <td colspan="2" style="padding:10px 0;color:#ac9f8c;font-size:14px;">
-           Your Zoom link is on its way — we'll send it in a reminder email before the session starts.
-         </td>
-       </tr>`;
-
-  const calendarDescriptionParts = [
+  // We deliberately do NOT put the join link in this confirmation email — it can
+  // change between registration and the event. The correct link goes out in a
+  // reminder email closer to the day; here we just point people to WhatsApp.
+  const calendarDescription = [
     `Thank you for registering for ${site.hero.edition} of The Thinking Room.`,
-    zoomLink ? `Join using: ${zoomLink}` : "",
-    meetingId ? `Meeting ID: ${meetingId}` : "",
-    passcode ? `Passcode: ${passcode}` : "",
-  ].filter(Boolean);
-  const calendarDescription = calendarDescriptionParts.join("\n");
-  const calendarLocation = zoomLink || "Zoom (link to follow)";
+    "The session link will be emailed to you before the event.",
+    whatsappUrl ? `Join our WhatsApp community: ${whatsappUrl}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const calendarLocation = "Zoom (link to follow by email)";
 
   const gcalLink = googleCalendarLink({
     title: eventTitle,
@@ -403,8 +365,27 @@ async function sendConfirmationEmail(record: Record<string, string>) {
               <td style="padding:10px 0;color:#8a8a8a;font-size:13px;letter-spacing:.08em;text-transform:uppercase;">🕒 Time</td>
               <td style="padding:10px 0;color:#f4efe6;font-size:15px;font-weight:700;">${escapeHtml(eventTime)}</td>
             </tr>
-            ${meetingRows}
           </table>
+
+          ${
+            whatsappUrl
+              ? `<div style="background:#0f1a12;border:1px solid rgba(37,211,102,0.35);border-radius:8px;padding:20px 24px;margin-bottom:24px;text-align:center;">
+                   <p style="margin:0 0 6px;color:#25d366;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Join our community</p>
+                   <p style="margin:0 0 16px;color:#ac9f8c;font-size:14px;line-height:1.7;">
+                     Join our WhatsApp group to connect with others and receive updates. We'll send the session link there and by email before the event.
+                   </p>
+                   <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;border-collapse:separate;">
+                     <tr>
+                       <td align="center" style="border-radius:6px;background:linear-gradient(180deg,#2ee06f,#1fae55);">
+                         <a href="${escapeHtml(whatsappUrl)}" style="display:block;padding:13px 28px;color:#04210f;font-size:14px;font-weight:700;text-decoration:none;">
+                           Join the WhatsApp group
+                         </a>
+                       </td>
+                     </tr>
+                   </table>
+                 </div>`
+              : ""
+          }
 
           <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
             <tr>

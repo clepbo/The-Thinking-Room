@@ -149,6 +149,17 @@ export const site = {
   },
 
   // -------------------------------------------------------------------------
+  // COMMUNITY (WhatsApp group band, shown under the registration form)
+  // -------------------------------------------------------------------------
+  community: {
+    eyebrow: "Stay Connected",
+    heading: "Join our community",
+    description:
+      "Be part of the conversation between sessions. Join our WhatsApp group for updates, reminders, and the session link before we go live.",
+    cta: "Join the WhatsApp group",
+  },
+
+  // -------------------------------------------------------------------------
   // JOURNAL (newsletter) SIGNUP
   // -------------------------------------------------------------------------
   journal: {
