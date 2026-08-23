@@ -11,6 +11,12 @@ image files (see [Project structure](#5-project-structure)).
 
 ---
 
+> 📓 **New here or picking the project back up?** Read
+> [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) — the full context and
+> progress of the project: what's built, how it fits together, every environment
+> variable, the data model, key decisions, and the roadmap. This README is the
+> how-to-run guide; that document is the map.
+
 ## Table of contents
 
 1. [Run it on your computer](#1-run-it-on-your-computer)
@@ -18,6 +24,8 @@ image files (see [Project structure](#5-project-structure)).
 3. [Deploy to Vercel — step by step](#3-deploy-to-vercel-step-by-step)
 4. [Where does the form data go?](#4-where-does-the-form-data-go-how-to-access-registrations-anytime)
 5. [Project structure](#5-project-structure)
+
+**See also:** [Project Context & Progress](docs/PROJECT_CONTEXT.md).
 
 ---
 
