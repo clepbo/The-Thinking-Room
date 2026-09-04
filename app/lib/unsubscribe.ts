@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { describeFetchError } from "./http";
 
 /**
  * The unsubscribe list. Emails here are filtered out of every send. Fails soft:
@@ -8,12 +9,18 @@ import { getSupabase } from "./supabase";
 export async function getUnsubscribedSet(): Promise<Set<string>> {
   const db = getSupabase();
   if (!db) return new Set();
-  const { data, error } = await db.from("unsubscribes").select("email");
-  if (error) {
-    console.error("[unsubscribe] fetch failed:", error.message);
+  try {
+    const { data, error } = await db.from("unsubscribes").select("email");
+    if (error) {
+      console.error("[unsubscribe] query failed:", error.message);
+      return new Set();
+    }
+    return new Set((data || []).map((r) => String(r.email).toLowerCase()));
+  } catch (err) {
+    // Network-level failure reaching Supabase (undici "fetch failed").
+    console.error("[unsubscribe] fetch failed:", describeFetchError(err));
     return new Set();
   }
-  return new Set((data || []).map((r) => String(r.email).toLowerCase()));
 }
 
 export async function addUnsubscribe(email: string): Promise<{ ok: boolean; error?: string }> {

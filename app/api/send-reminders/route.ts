@@ -8,6 +8,7 @@ import {
   type ReminderContent,
 } from "../../lib/eventEmail";
 import { getUnsubscribedSet } from "../../lib/unsubscribe";
+import { fetchWithRetry, describeFetchError } from "../../lib/http";
 
 /**
  * ============================================================================
@@ -128,7 +129,7 @@ async function fetchRecipientsFromSheet(resend: boolean, audience: Audience): Pr
     );
   }
   const url = `${base}${base.includes("?") ? "&" : "?"}action=list&token=${encodeURIComponent(token)}`;
-  const res = await fetch(url, { redirect: "follow" });
+  const res = await fetchWithRetry(url, { redirect: "follow" }, { label: "Loading recipients from the sheet" });
   if (!res.ok) throw new Error(`Sheet list request failed: ${res.status}`);
   const data = (await res.json()) as {
     ok?: boolean;
@@ -161,14 +162,18 @@ async function markReminded(emails: string[]) {
   const token = process.env.SHEET_API_TOKEN;
   if (!base || !token || !emails.length) return;
   try {
-    await fetch(base, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "markReminded", token, emails }),
-      redirect: "follow",
-    });
+    await fetchWithRetry(
+      base,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "markReminded", token, emails }),
+        redirect: "follow",
+      },
+      { label: "Marking recipients reminded", retries: 1 }
+    );
   } catch (err) {
-    console.error("[the-thinking-room] markReminded failed:", err);
+    console.error("[the-thinking-room] markReminded failed:", describeFetchError(err));
   }
 }
 

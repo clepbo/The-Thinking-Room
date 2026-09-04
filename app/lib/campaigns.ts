@@ -2,6 +2,7 @@ import { getSupabase } from "./supabase";
 import { getTransporter, personalize, type Recipient } from "./eventEmail";
 import { fetchSheetRegistrants } from "./sheet";
 import { getUnsubscribedSet } from "./unsubscribe";
+import { describeFetchError } from "./http";
 
 /**
  * Scheduled newsletter campaigns. A campaign is composed in the newsletter tab
@@ -92,22 +93,28 @@ export async function createScheduledCampaign(input: {
   const db = getSupabase();
   if (!db) return { ok: false, error: "Supabase is not configured." };
   const hasExplicit = Array.isArray(input.recipients) && input.recipients.length > 0;
-  const { data, error } = await db
-    .from(TABLE)
-    .insert({
-      subject: input.subject,
-      html: input.html,
-      body_text: input.bodyText || "",
-      audience: input.audience,
-      scheduled_at: input.scheduledAt,
-      status: "scheduled",
-      recipients: hasExplicit ? input.recipients : null,
-      total: hasExplicit ? input.recipients!.length : 0,
-    })
-    .select("id")
-    .single();
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, id: data.id as string };
+  try {
+    const { data, error } = await db
+      .from(TABLE)
+      .insert({
+        subject: input.subject,
+        html: input.html,
+        body_text: input.bodyText || "",
+        audience: input.audience,
+        scheduled_at: input.scheduledAt,
+        status: "scheduled",
+        recipients: hasExplicit ? input.recipients : null,
+        total: hasExplicit ? input.recipients!.length : 0,
+      })
+      .select("id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, id: data.id as string };
+  } catch (err) {
+    // Network-level failure reaching Supabase (undici "fetch failed") — surface
+    // the real cause instead of the opaque wrapper.
+    return { ok: false, error: `Couldn't reach Supabase: ${describeFetchError(err)}` };
+  }
 }
 
 /** List recent + upcoming campaigns for the dashboard (no heavy fields). */
@@ -182,6 +189,25 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
   const start = Date.now();
   const results: { id: string; sent: number; failed: number; done: boolean }[] = [];
 
+  try {
+    await runDueCampaigns(db, transporter, start, budgetMs, results);
+  } catch (err) {
+    // A Supabase network failure (undici "fetch failed") throws here rather than
+    // returning a query error. Report the real cause; work already committed to
+    // the DB (cursor/sent counts) is preserved for the next run.
+    return { ran: results.length > 0, error: `Couldn't reach Supabase: ${describeFetchError(err)}`, results };
+  }
+
+  return { ran: true, results };
+}
+
+async function runDueCampaigns(
+  db: NonNullable<ReturnType<typeof getSupabase>>,
+  transporter: NonNullable<ReturnType<typeof getTransporter>>,
+  start: number,
+  budgetMs: number,
+  results: { id: string; sent: number; failed: number; done: boolean }[]
+): Promise<void> {
   while (Date.now() - start < budgetMs) {
     const { data: due } = await db
       .from(TABLE)
@@ -260,6 +286,4 @@ export async function processDueCampaigns(budgetMs = 40_000): Promise<{
       break; // out of time budget; a later run continues from `cursor`
     }
   }
-
-  return { ran: true, results };
 }

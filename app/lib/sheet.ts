@@ -3,6 +3,8 @@
  * Script web app). Returns null when it isn't configured. Shared by the
  * dashboard so we don't duplicate the fetch.
  */
+import { fetchWithRetry, describeFetchError } from "./http";
+
 export interface SheetRow {
   name?: string;
   email?: string;
@@ -16,12 +18,13 @@ export async function fetchSheetRegistrants(): Promise<SheetRow[] | null> {
   if (!base || !token) return null;
   try {
     const url = `${base}${base.includes("?") ? "&" : "?"}action=list&token=${encodeURIComponent(token)}`;
-    const res = await fetch(url, { redirect: "follow" });
+    const res = await fetchWithRetry(url, { redirect: "follow" }, { label: "Reading the sheet" });
     if (!res.ok) return null;
     const data = (await res.json()) as { ok?: boolean; registrants?: SheetRow[] };
     if (!data.ok) return null;
     return data.registrants || [];
-  } catch {
+  } catch (err) {
+    console.error("[the-thinking-room] fetchSheetRegistrants failed:", describeFetchError(err));
     return null;
   }
 }

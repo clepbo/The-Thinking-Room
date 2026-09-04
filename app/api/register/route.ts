@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { site } from "../../content";
+import { fetchWithRetry } from "../../lib/http";
 
 /**
  * ============================================================================
@@ -115,12 +116,16 @@ async function sendToSheet(record: Record<string, string>) {
     return;
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(record),
-    redirect: "follow", // Apps Script responds via a redirect
-  });
+  const res = await fetchWithRetry(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+      redirect: "follow", // Apps Script responds via a redirect
+    },
+    { label: "Saving to the Google Sheet" }
+  );
   if (!res.ok) {
     throw new Error(`Google Sheet webhook responded ${res.status}`);
   }
